@@ -36,11 +36,12 @@ export interface Quote {
   items: Item[];
 }
 
-export type ItemStatus = "arrived" | "returning" | "exchanging" | "refunded";
+export type ItemStatus = "ordered" | "arrived" | "returning" | "exchanging" | "refunded";
 
-export const ITEM_STATUSES: ItemStatus[] = ["arrived", "returning", "exchanging", "refunded"];
+export const ITEM_STATUSES: ItemStatus[] = ["ordered", "arrived", "returning", "exchanging", "refunded"];
 
 export const ITEM_STATUS_COLORS: Record<ItemStatus, string> = {
+  ordered:    "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
   arrived:    "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
   returning:  "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
   exchanging: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
