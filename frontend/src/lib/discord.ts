@@ -27,6 +27,9 @@ export function formatDiscordMessage(quote: Quote, totals: QuoteTotals): string 
   );
 
   lines.push("");
+  lines.push(`Estimated Grand Total - $${totals.grandTotal.toFixed(2)}`);
+
+  lines.push("");
   lines.push(
     "Total Item Cost + Fees are paid upfront, and once everything arrives at the China warehouse, I'll provide an accurate shipping and insurance quote."
   );
