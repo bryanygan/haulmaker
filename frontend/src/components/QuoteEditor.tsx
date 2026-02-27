@@ -115,7 +115,7 @@ export function QuoteEditor({ id }: { id: string }) {
             <div className="h-4 w-56 animate-pulse rounded bg-muted" />
           </div>
         </div>
-        <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <div className="space-y-6">
             <Card className="animate-pulse"><CardContent className="py-16" /></Card>
             <Card className="animate-pulse"><CardContent className="py-24" /></Card>
@@ -173,9 +173,9 @@ export function QuoteEditor({ id }: { id: string }) {
       )}
 
       {/* On mobile: summary + output first, then items. On desktop: items left, sidebar right */}
-      <div className="grid gap-6 xl:grid-cols-[1fr_380px]">
+      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         {/* Left column: items (shown second on mobile) */}
-        <div className="order-2 space-y-6 xl:order-1">
+        <div className="order-2 space-y-6 lg:order-1">
           <AddItemForm onAdd={handleAddItem} />
           <div>
             <ItemsTable
@@ -222,7 +222,7 @@ export function QuoteEditor({ id }: { id: string }) {
         </div>
 
         {/* Right column: settings, summary, output (shown first on mobile) */}
-        <div className="order-1 space-y-6 xl:order-2">
+        <div className="order-1 space-y-6 lg:order-2">
           <SettingsCard quote={quote} onUpdate={handleUpdateQuote} />
           <NotesCard quote={quote} onUpdate={handleUpdateQuote} />
           <SummaryCard totals={totals} />
