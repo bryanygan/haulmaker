@@ -27,14 +27,14 @@ export function OutputCard({ quote, totals }: OutputCardProps) {
 
   function handleExportJSON() {
     const json = exportToJSON(quote, totals);
-    const filename = `quote-${quote.customerName.replace(/\s+/g, "-").toLowerCase()}-${quote.id.slice(0, 8)}.json`;
+    const filename = `order-${quote.customerName.replace(/\s+/g, "-").toLowerCase()}-${quote.id.slice(0, 8)}.json`;
     downloadFile(json, filename, "application/json");
     toast.success("JSON exported");
   }
 
   function handleExportCSV() {
     const csv = exportToCSV(quote, totals);
-    const filename = `quote-${quote.customerName.replace(/\s+/g, "-").toLowerCase()}-${quote.id.slice(0, 8)}.csv`;
+    const filename = `order-${quote.customerName.replace(/\s+/g, "-").toLowerCase()}-${quote.id.slice(0, 8)}.csv`;
     downloadFile(csv, filename, "text/csv");
     toast.success("CSV exported");
   }

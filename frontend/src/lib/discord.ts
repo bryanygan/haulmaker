@@ -6,7 +6,8 @@ export function formatDiscordMessage(quote: Quote, totals: QuoteTotals): string 
   // Item lines (only included)
   const includedItems = totals.itemCosts.filter((i) => i.included);
   for (const item of includedItems) {
-    lines.push(`${item.name} - $${item.usd.toFixed(2)}`);
+    const tag = item.status ? ` [${item.status.toUpperCase()}]` : "";
+    lines.push(`${item.name} - $${item.usd.toFixed(2)}${tag}`);
   }
 
   lines.push("");
@@ -28,6 +29,16 @@ export function formatDiscordMessage(quote: Quote, totals: QuoteTotals): string 
 
   lines.push("");
   lines.push(`Estimated Grand Total - $${totals.grandTotal.toFixed(2)}`);
+
+  if (totals.refundedItems.length > 0) {
+    lines.push("");
+    lines.push("--- Refunds ---");
+    for (const item of totals.refundedItems) {
+      lines.push(`${item.name} - -$${item.usd.toFixed(2)}`);
+    }
+    lines.push(`Total Credit - -$${totals.totalCredit.toFixed(2)}`);
+    lines.push(`Net Total - $${(totals.grandTotal - totals.totalCredit).toFixed(2)}`);
+  }
 
   lines.push("");
   lines.push(

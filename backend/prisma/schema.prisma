@@ -52,4 +52,5 @@ model Item {
   type        String
   weightGrams Float?
   include     Boolean @default(true)
+  status      String?
 }

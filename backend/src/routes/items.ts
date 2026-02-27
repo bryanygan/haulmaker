@@ -14,7 +14,7 @@ router.post("/quotes/:id/items", async (req: Request<{ id: string }>, res: Respo
       return;
     }
 
-    const { link, name, yuan, type, weightGrams, include } = req.body;
+    const { link, name, yuan, type, weightGrams, include, status } = req.body;
 
     if (!link || !name || yuan === undefined || !type) {
       res.status(400).json({ error: "link, name, yuan, and type are required" });
@@ -30,6 +30,7 @@ router.post("/quotes/:id/items", async (req: Request<{ id: string }>, res: Respo
         type,
         weightGrams: weightGrams !== undefined ? Number(weightGrams) : null,
         include: include !== undefined ? include : true,
+        status: status || null,
       },
     });
 
@@ -43,7 +44,7 @@ router.post("/quotes/:id/items", async (req: Request<{ id: string }>, res: Respo
 // PUT /api/items/:id
 router.put("/items/:id", async (req: Request<{ id: string }>, res: Response) => {
   try {
-    const { link, name, yuan, type, weightGrams, include } = req.body;
+    const { link, name, yuan, type, weightGrams, include, status } = req.body;
 
     const item = await prisma.item.update({
       where: { id: req.params.id },
@@ -56,6 +57,7 @@ router.put("/items/:id", async (req: Request<{ id: string }>, res: Response) => 
           weightGrams: weightGrams === null ? null : Number(weightGrams),
         }),
         ...(include !== undefined && { include }),
+        ...(status !== undefined && { status }),
       },
     });
     res.json(item);

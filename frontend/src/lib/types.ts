@@ -36,6 +36,17 @@ export interface Quote {
   items: Item[];
 }
 
+export type ItemStatus = "arrived" | "returning" | "exchanging" | "refunded";
+
+export const ITEM_STATUSES: ItemStatus[] = ["arrived", "returning", "exchanging", "refunded"];
+
+export const ITEM_STATUS_COLORS: Record<ItemStatus, string> = {
+  arrived:    "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  returning:  "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
+  exchanging: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  refunded:   "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+};
+
 export interface Item {
   id: string;
   quoteId: string;
@@ -45,6 +56,7 @@ export interface Item {
   type: ItemType;
   weightGrams: number | null;
   include: boolean;
+  status: ItemStatus | null;
 }
 
 export type ItemType = "tee" | "hoodie" | "pants" | "shoes" | "accessory" | "custom";
@@ -61,13 +73,15 @@ export const DEFAULT_WEIGHTS: Record<ItemType, number> = {
 };
 
 export interface QuoteTotals {
-  itemCosts: { id: string; name: string; usd: number; included: boolean }[];
+  itemCosts: { id: string; name: string; usd: number; included: boolean; status: ItemStatus | null }[];
   totalItemCost: number;
   totalWeightKg: number;
   shipping: number;
   insurance: number;
   haulFee: number;
   grandTotal: number;
+  refundedItems: { id: string; name: string; usd: number }[];
+  totalCredit: number;
 }
 
 export interface CreateQuotePayload {
@@ -106,4 +120,5 @@ export interface UpdateItemPayload {
   type?: ItemType;
   weightGrams?: number | null;
   include?: boolean;
+  status?: ItemStatus | null;
 }

@@ -33,7 +33,7 @@ export function QuoteEditor({ id }: { id: string }) {
       const data = await getQuote(id);
       setQuote(data);
     } catch {
-      toast.error("Failed to load quote");
+      toast.error("Failed to load order");
       router.push("/quotes");
     } finally {
       setLoading(false);
@@ -186,6 +186,39 @@ export function QuoteEditor({ id }: { id: string }) {
               onDeleteItem={handleDeleteItem}
             />
           </div>
+          {totals.refundedItems.length > 0 && (
+            <div className="rounded-lg border border-red-200 dark:border-red-800">
+              <div className="border-b border-red-200 bg-red-50 px-4 py-2 dark:border-red-800 dark:bg-red-900/20">
+                <h3 className="text-sm font-semibold text-red-700 dark:text-red-300">Refunded Items</h3>
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-red-50/50 dark:bg-red-900/10">
+                    <th className="px-4 py-2 text-left font-medium">Item</th>
+                    <th className="px-4 py-2 text-right font-medium">Credit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {totals.refundedItems.map((item) => (
+                    <tr key={item.id} className="border-b last:border-b-0">
+                      <td className="px-4 py-2">{item.name}</td>
+                      <td className="px-4 py-2 text-right font-medium text-red-600 dark:text-red-400">
+                        -${item.usd.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t bg-red-50/50 dark:bg-red-900/10">
+                    <td className="px-4 py-2 font-semibold">Total Credit</td>
+                    <td className="px-4 py-2 text-right font-bold text-red-600 dark:text-red-400">
+                      -${totals.totalCredit.toFixed(2)}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* Right column: settings, summary, output (shown first on mobile) */}

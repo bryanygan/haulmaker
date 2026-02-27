@@ -52,6 +52,19 @@ export function SummaryCard({ totals }: SummaryCardProps) {
             <span>Grand Total (Est.)</span>
             <span>${totals.grandTotal.toFixed(2)}</span>
           </div>
+          {totals.totalCredit > 0 && (
+            <>
+              <hr />
+              <div className="flex justify-between text-red-600 dark:text-red-400">
+                <span>Refund Credit ({totals.refundedItems.length} item{totals.refundedItems.length !== 1 ? "s" : ""})</span>
+                <span className="font-medium">-${totals.totalCredit.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-base font-bold">
+                <span>Net Total</span>
+                <span>${(totals.grandTotal - totals.totalCredit).toFixed(2)}</span>
+              </div>
+            </>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -5,8 +5,8 @@ import { AuthGuard } from "@/components/AuthGuard";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ZR Hauls Quote Builder",
-  description: "Internal tool for generating haul quotes and Discord-formatted messages",
+  title: "ZR Hauls",
+  description: "Order management system for ZR Hauls",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

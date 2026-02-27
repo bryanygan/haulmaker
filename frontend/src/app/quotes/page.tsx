@@ -133,10 +133,10 @@ export default function QuotesPage() {
       setNewOrderId("");
       setSelectedCustomerId("new");
       setSaveAsCustomer(false);
-      toast.success("Quote created");
+      toast.success("Order created");
       router.push(`/editor?id=${quote.id}`);
     } catch {
-      toast.error("Failed to create quote");
+      toast.error("Failed to create order");
     }
   }
 
@@ -151,9 +151,9 @@ export default function QuotesPage() {
     try {
       await deleteQuote(deleteTarget);
       setQuotes((prev) => prev.filter((q) => q.id !== deleteTarget));
-      toast.success("Quote deleted");
+      toast.success("Order deleted");
     } catch {
-      toast.error("Failed to delete quote");
+      toast.error("Failed to delete order");
     } finally {
       setDeleteDialogOpen(false);
       setDeleteTarget(null);
@@ -164,20 +164,20 @@ export default function QuotesPage() {
     e.stopPropagation();
     try {
       const newQuote = await duplicateQuote(quote.id);
-      toast.success("Quote duplicated with all items");
+      toast.success("Order duplicated with all items");
       router.push(`/editor?id=${newQuote.id}`);
     } catch {
-      toast.error("Failed to duplicate quote");
+      toast.error("Failed to duplicate order");
     }
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold sm:text-3xl">Quotes</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">Orders</h1>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">New Quote</span>
+          <span className="hidden sm:inline">New Order</span>
           <span className="sm:hidden">New</span>
         </Button>
       </div>
@@ -223,8 +223,8 @@ export default function QuotesPage() {
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
             {quotes.length === 0
-              ? "No quotes yet. Create your first one!"
-              : "No quotes match your search."}
+              ? "No orders yet. Create your first one!"
+              : "No orders match your search."}
           </CardContent>
         </Card>
       ) : (
@@ -284,12 +284,12 @@ export default function QuotesPage() {
         </div>
       )}
 
-      {/* Create Quote Dialog */}
+      {/* Create Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New Quote</DialogTitle>
-            <DialogDescription>Create a new haul quote for a customer.</DialogDescription>
+            <DialogTitle>New Order</DialogTitle>
+            <DialogDescription>Create a new order for a customer.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {customers.length > 0 && (
@@ -355,12 +355,13 @@ export default function QuotesPage() {
       </Dialog>
 
       {/* Delete Confirm Dialog */}
+
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Quote</DialogTitle>
+            <DialogTitle>Delete Order</DialogTitle>
             <DialogDescription>
-              This will permanently delete this quote and all its items. This cannot be undone.
+              This will permanently delete this order and all its items. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

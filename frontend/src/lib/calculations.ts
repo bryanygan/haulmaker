@@ -19,6 +19,7 @@ export function computeTotals(quote: Quote): QuoteTotals {
     name: item.name,
     usd: computeItemUsd(item.yuan, exchangeRate, fixedFeeUsd),
     included: item.include,
+    status: item.status,
   }));
 
   const includedItems = itemCosts.filter((i) => i.included);
@@ -33,6 +34,11 @@ export function computeTotals(quote: Quote): QuoteTotals {
 
   const grandTotal = Math.round((totalItemCost + haulFeeUsd + shipping + insurance) * 100) / 100;
 
+  const refundedItems = itemCosts
+    .filter((i) => i.status === "refunded" && i.included)
+    .map((i) => ({ id: i.id, name: i.name, usd: i.usd }));
+  const totalCredit = Math.round(refundedItems.reduce((sum, i) => sum + i.usd, 0) * 100) / 100;
+
   return {
     itemCosts,
     totalItemCost: Math.round(totalItemCost * 100) / 100,
@@ -41,5 +47,7 @@ export function computeTotals(quote: Quote): QuoteTotals {
     insurance,
     haulFee: haulFeeUsd,
     grandTotal,
+    refundedItems,
+    totalCredit,
   };
 }

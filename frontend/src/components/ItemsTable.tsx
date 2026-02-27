@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Item, ItemType, ITEM_TYPES, DEFAULT_WEIGHTS, UpdateItemPayload } from "@/lib/types";
+import { Item, ItemType, ItemStatus, ITEM_TYPES, ITEM_STATUSES, ITEM_STATUS_COLORS, DEFAULT_WEIGHTS, UpdateItemPayload } from "@/lib/types";
 import { computeItemUsd, getItemWeight } from "@/lib/calculations";
 import { estimateWeight } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -192,6 +192,7 @@ export function ItemsTable({
             <th className="px-3 py-2 text-right font-medium">USD</th>
             <th className="px-3 py-2 text-right font-medium">Weight</th>
             <th className="px-3 py-2 text-left font-medium">Link</th>
+            <th className="px-3 py-2 text-left font-medium">Status</th>
             <th className="px-3 py-2 text-center font-medium">Actions</th>
           </tr>
         </thead>
@@ -205,7 +206,7 @@ export function ItemsTable({
             return (
               <tr
                 key={item.id}
-                className={`border-b transition-colors hover:bg-muted/30 ${!item.include ? "opacity-50" : ""}`}
+                className={`border-b transition-colors hover:bg-muted/30 ${!item.include ? "opacity-50" : ""} ${item.status === "refunded" ? "bg-red-50/50 dark:bg-red-950/20" : ""}`}
               >
                 <td className="px-3 py-2">
                   <Switch
@@ -360,6 +361,26 @@ export function ItemsTable({
                       </span>
                     </a>
                   )}
+                </td>
+                <td className="px-3 py-2">
+                  <Select
+                    value={item.status || "none"}
+                    onValueChange={(v) =>
+                      onUpdateItem(item.id, { status: v === "none" ? null : (v as ItemStatus) })
+                    }
+                  >
+                    <SelectTrigger className={`h-7 w-[110px] text-xs font-medium ${item.status ? ITEM_STATUS_COLORS[item.status] + " border-0" : ""}`}>
+                      <SelectValue placeholder="--" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">--</SelectItem>
+                      {ITEM_STATUSES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td className="px-3 py-2 text-center">
                   <Button
