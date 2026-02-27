@@ -87,13 +87,18 @@ export function ItemsTable({
         const result = await estimateWeight(item.name, item.type, item.link);
         await onUpdateItem(item.id, { weightGrams: result.weightGrams });
 
-        const confidenceColor =
-          result.confidence === "high" ? "green" : result.confidence === "medium" ? "yellow" : "red";
-        const dot = confidenceColor === "green" ? "🟢" : confidenceColor === "yellow" ? "🟡" : "🔴";
+        const dot = result.confidence === "high" ? "🟢" : result.confidence === "medium" ? "🟡" : "🔴";
+        const weightType = result.usedVolumetric ? "volumetric" : "actual";
+        const details = [
+          `Actual: ${result.actualWeightGrams}g`,
+          result.volumetricWeightGrams ? `Volumetric: ${result.volumetricWeightGrams}g` : null,
+          result.dimensions ? `Dims: ${result.dimensions}` : null,
+          `Used: ${weightType} (higher)`,
+        ].filter(Boolean).join(" | ");
 
         toast.success(
-          `${dot} Estimated ${result.weightGrams}g (${result.confidence} confidence)`,
-          { description: result.reasoning }
+          `${dot} Estimated ${result.weightGrams}g (${result.confidence})`,
+          { description: `${details}\n${result.reasoning}` }
         );
       } catch {
         toast.error("Failed to estimate weight");

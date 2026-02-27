@@ -111,6 +111,10 @@ export async function deleteItem(id: string): Promise<void> {
 // AI Weight Estimation
 export interface WeightEstimate {
   weightGrams: number;
+  actualWeightGrams: number;
+  volumetricWeightGrams: number | null;
+  dimensions: string | null;
+  usedVolumetric: boolean;
   confidence: "low" | "medium" | "high";
   reasoning: string;
 }
