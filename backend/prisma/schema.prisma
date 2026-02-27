@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Quote {
+  id               String   @id @default(uuid())
+  customerName     String
+  customerHandle   String?
+  orderId          String?
+
+  exchangeRate     Float    @default(6.5)
+  fixedFeeUsd      Float    @default(2)
+  shippingPerKgUsd Float    @default(18)
+  insuranceRate    Float    @default(0.15)
+  haulFeeUsd       Float    @default(10)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  items            Item[]
+}
+
+model Item {
+  id          String  @id @default(uuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  link        String
+  name        String
+  yuan        Float
+
+  type        String
+  weightGrams Float?
+  include     Boolean @default(true)
+}
