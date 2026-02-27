@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Item, ItemType, ITEM_TYPES, DEFAULT_WEIGHTS, UpdateItemPayload } from "@/lib/types";
 import { computeItemUsd, getItemWeight } from "@/lib/calculations";
+import { estimateWeight } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -13,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, ExternalLink } from "lucide-react";
+import { Trash2, ExternalLink, Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface ItemsTableProps {
   items: Item[];
@@ -37,6 +39,7 @@ export function ItemsTable({
 }: ItemsTableProps) {
   const [editing, setEditing] = useState<EditingCell | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [estimatingId, setEstimatingId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,6 +80,30 @@ export function ItemsTable({
     setEditing(null);
   }, []);
 
+  const handleEstimateWeight = useCallback(
+    async (item: Item) => {
+      setEstimatingId(item.id);
+      try {
+        const result = await estimateWeight(item.name, item.type, item.link);
+        await onUpdateItem(item.id, { weightGrams: result.weightGrams });
+
+        const confidenceColor =
+          result.confidence === "high" ? "green" : result.confidence === "medium" ? "yellow" : "red";
+        const dot = confidenceColor === "green" ? "🟢" : confidenceColor === "yellow" ? "🟡" : "🔴";
+
+        toast.success(
+          `${dot} Estimated ${result.weightGrams}g (${result.confidence} confidence)`,
+          { description: result.reasoning }
+        );
+      } catch {
+        toast.error("Failed to estimate weight");
+      } finally {
+        setEstimatingId(null);
+      }
+    },
+    [onUpdateItem]
+  );
+
   if (items.length === 0) {
     return (
       <div className="rounded-lg border p-8 text-center text-muted-foreground">
@@ -105,6 +132,7 @@ export function ItemsTable({
             const usd = computeItemUsd(item.yuan, exchangeRate, fixedFeeUsd);
             const weight = getItemWeight(item);
             const isDefault = item.weightGrams === null || item.weightGrams === undefined;
+            const isEstimating = estimatingId === item.id;
 
             return (
               <tr
@@ -182,37 +210,53 @@ export function ItemsTable({
                 </td>
                 <td className="px-3 py-2 text-right font-medium">${usd.toFixed(2)}</td>
                 <td className="px-3 py-2 text-right">
-                  {editing?.itemId === item.id && editing.field === "weightGrams" ? (
-                    <Input
-                      ref={inputRef}
-                      type="number"
-                      step="1"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") cancelEdit();
-                      }}
-                      className="h-8 w-20 text-right"
-                    />
-                  ) : (
-                    <span
-                      className="cursor-pointer rounded px-1 hover:bg-muted"
-                      onClick={() =>
-                        startEdit(
-                          item.id,
-                          "weightGrams",
-                          item.weightGrams !== null && item.weightGrams !== undefined
-                            ? String(item.weightGrams)
-                            : ""
-                        )
-                      }
-                      title={isDefault ? `Default: ${DEFAULT_WEIGHTS[item.type as ItemType]}g` : "Custom weight"}
+                  <div className="flex items-center justify-end gap-1">
+                    {editing?.itemId === item.id && editing.field === "weightGrams" ? (
+                      <Input
+                        ref={inputRef}
+                        type="number"
+                        step="1"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={commitEdit}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEdit();
+                          if (e.key === "Escape") cancelEdit();
+                        }}
+                        className="h-8 w-20 text-right"
+                      />
+                    ) : (
+                      <span
+                        className="cursor-pointer rounded px-1 hover:bg-muted"
+                        onClick={() =>
+                          startEdit(
+                            item.id,
+                            "weightGrams",
+                            item.weightGrams !== null && item.weightGrams !== undefined
+                              ? String(item.weightGrams)
+                              : ""
+                          )
+                        }
+                        title={isDefault ? `Default: ${DEFAULT_WEIGHTS[item.type as ItemType]}g` : "Custom weight"}
+                      >
+                        {weight}g{isDefault ? " *" : ""}
+                      </span>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => handleEstimateWeight(item)}
+                      disabled={isEstimating}
+                      title="AI weight estimate"
                     >
-                      {weight}g{isDefault ? " *" : ""}
-                    </span>
-                  )}
+                      {isEstimating ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-purple-500" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                      )}
+                    </Button>
+                  </div>
                 </td>
                 <td className="px-3 py-2">
                   {editing?.itemId === item.id && editing.field === "link" ? (
@@ -265,7 +309,8 @@ export function ItemsTable({
         </tbody>
       </table>
       <div className="px-3 py-2 text-xs text-muted-foreground">
-        * = default weight from type. Click any value to edit inline.
+        * = default weight from type. Click any value to edit inline.{" "}
+        <Sparkles className="mb-0.5 inline h-3 w-3 text-purple-500" /> = AI weight estimate.
       </div>
     </div>
   );

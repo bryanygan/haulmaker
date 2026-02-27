@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Quote } from "@/lib/types";
-import { getQuotes, createQuote, deleteQuote } from "@/lib/api";
+import { getQuotes, createQuote, deleteQuote, duplicateQuote } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,12 +20,31 @@ import { Label } from "@/components/ui/label";
 import { Plus, Trash2, Search, Copy } from "lucide-react";
 import { toast } from "sonner";
 
+function QuoteCardSkeleton() {
+  return (
+    <Card className="animate-pulse">
+      <CardHeader className="pb-3">
+        <div className="h-5 w-32 rounded bg-muted" />
+        <div className="mt-1 h-4 w-20 rounded bg-muted" />
+      </CardHeader>
+      <CardContent>
+        <div className="flex justify-between">
+          <div className="h-4 w-16 rounded bg-muted" />
+          <div className="h-4 w-20 rounded bg-muted" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function QuotesPage() {
   const router = useRouter();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerHandle, setNewCustomerHandle] = useState("");
   const [newOrderId, setNewOrderId] = useState("");
@@ -76,48 +95,45 @@ export default function QuotesPage() {
     }
   }
 
-  async function handleDelete(e: React.MouseEvent, id: string) {
+  function confirmDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    if (!confirm("Delete this quote?")) return;
+    setDeleteTarget(id);
+    setDeleteDialogOpen(true);
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
     try {
-      await deleteQuote(id);
-      setQuotes((prev) => prev.filter((q) => q.id !== id));
+      await deleteQuote(deleteTarget);
+      setQuotes((prev) => prev.filter((q) => q.id !== deleteTarget));
       toast.success("Quote deleted");
     } catch {
       toast.error("Failed to delete quote");
+    } finally {
+      setDeleteDialogOpen(false);
+      setDeleteTarget(null);
     }
   }
 
   async function handleDuplicate(e: React.MouseEvent, quote: Quote) {
     e.stopPropagation();
     try {
-      const newQuote = await createQuote({
-        customerName: `${quote.customerName} (Copy)`,
-        customerHandle: quote.customerHandle || undefined,
-        orderId: quote.orderId || undefined,
-      });
-      toast.success("Quote duplicated");
+      const newQuote = await duplicateQuote(quote.id);
+      toast.success("Quote duplicated with all items");
       router.push(`/editor?id=${newQuote.id}`);
     } catch {
       toast.error("Failed to duplicate quote");
     }
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading quotes...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Quotes</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold sm:text-3xl">Quotes</h1>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          New Quote
+          <span className="hidden sm:inline">New Quote</span>
+          <span className="sm:hidden">New</span>
         </Button>
       </div>
 
@@ -131,10 +147,18 @@ export default function QuotesPage() {
         />
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <QuoteCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-muted-foreground">
-            {quotes.length === 0 ? "No quotes yet. Create your first one!" : "No quotes match your search."}
+            {quotes.length === 0
+              ? "No quotes yet. Create your first one!"
+              : "No quotes match your search."}
           </CardContent>
         </Card>
       ) : (
@@ -143,22 +167,26 @@ export default function QuotesPage() {
             <Card
               key={quote.id}
               className="cursor-pointer transition-shadow hover:shadow-md"
-              onClick={() => router.push(`/quotes/${quote.id}`)}
+              onClick={() => router.push(`/editor?id=${quote.id}`)}
             >
               <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-lg">{quote.customerName}</CardTitle>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <CardTitle className="truncate text-lg">{quote.customerName}</CardTitle>
                     {quote.customerHandle && (
-                      <p className="text-sm text-muted-foreground">{quote.customerHandle}</p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {quote.customerHandle}
+                      </p>
                     )}
                   </div>
-                  {quote.orderId && <Badge variant="outline">{quote.orderId}</Badge>}
+                  {quote.orderId && <Badge variant="outline" className="shrink-0">{quote.orderId}</Badge>}
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{quote.items.length} item{quote.items.length !== 1 ? "s" : ""}</span>
+                  <span>
+                    {quote.items.length} item{quote.items.length !== 1 ? "s" : ""}
+                  </span>
                   <span>{new Date(quote.updatedAt).toLocaleDateString()}</span>
                 </div>
                 <div className="mt-3 flex gap-2">
@@ -173,7 +201,7 @@ export default function QuotesPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => handleDelete(e, quote.id)}
+                    onClick={(e) => confirmDelete(e, quote.id)}
                     title="Delete"
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
@@ -185,6 +213,7 @@ export default function QuotesPage() {
         </div>
       )}
 
+      {/* Create Quote Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -226,6 +255,26 @@ export default function QuotesPage() {
               Cancel
             </Button>
             <Button onClick={handleCreate}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Quote</DialogTitle>
+            <DialogDescription>
+              This will permanently delete this quote and all its items. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

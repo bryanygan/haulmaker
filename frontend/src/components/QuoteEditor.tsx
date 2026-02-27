@@ -11,6 +11,7 @@ import { SettingsCard } from "@/components/SettingsCard";
 import { SummaryCard } from "@/components/SummaryCard";
 import { OutputCard } from "@/components/OutputCard";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -98,8 +99,24 @@ export function QuoteEditor({ id }: { id: string }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading quote...</p>
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 animate-pulse rounded bg-muted" />
+          <div className="space-y-2">
+            <div className="h-6 w-40 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-56 animate-pulse rounded bg-muted" />
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+          <div className="space-y-6">
+            <Card className="animate-pulse"><CardContent className="py-16" /></Card>
+            <Card className="animate-pulse"><CardContent className="py-24" /></Card>
+          </div>
+          <div className="space-y-6">
+            <Card className="animate-pulse"><CardHeader className="pb-3"><div className="h-5 w-20 rounded bg-muted" /></CardHeader><CardContent className="space-y-3">{[1,2,3,4,5].map(i=><div key={i} className="h-8 rounded bg-muted" />)}</CardContent></Card>
+            <Card className="animate-pulse"><CardHeader className="pb-3"><div className="h-5 w-20 rounded bg-muted" /></CardHeader><CardContent className="space-y-2">{[1,2,3,4].map(i=><div key={i} className="h-4 rounded bg-muted" />)}</CardContent></Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -132,21 +149,24 @@ export function QuoteEditor({ id }: { id: string }) {
         </div>
       )}
 
+      {/* On mobile: summary + output first, then items. On desktop: items left, sidebar right */}
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* Left column: items */}
-        <div className="space-y-6">
+        {/* Left column: items (shown second on mobile) */}
+        <div className="order-2 space-y-6 lg:order-1">
           <AddItemForm onAdd={handleAddItem} />
-          <ItemsTable
-            items={quote.items}
-            exchangeRate={quote.exchangeRate}
-            fixedFeeUsd={quote.fixedFeeUsd}
-            onUpdateItem={handleUpdateItem}
-            onDeleteItem={handleDeleteItem}
-          />
+          <div className="overflow-x-auto">
+            <ItemsTable
+              items={quote.items}
+              exchangeRate={quote.exchangeRate}
+              fixedFeeUsd={quote.fixedFeeUsd}
+              onUpdateItem={handleUpdateItem}
+              onDeleteItem={handleDeleteItem}
+            />
+          </div>
         </div>
 
-        {/* Right column: settings, summary, output */}
-        <div className="space-y-6">
+        {/* Right column: settings, summary, output (shown first on mobile) */}
+        <div className="order-1 space-y-6 lg:order-2">
           <SettingsCard quote={quote} onUpdate={handleUpdateQuote} />
           <SummaryCard totals={totals} />
           <OutputCard quote={quote} totals={totals} />

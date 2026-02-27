@@ -111,6 +111,50 @@ router.put("/:id", async (req: Request<{ id: string }>, res: Response) => {
   }
 });
 
+// POST /api/quotes/:id/duplicate
+router.post("/:id/duplicate", async (req: Request<{ id: string }>, res: Response) => {
+  try {
+    const original = await prisma.quote.findUnique({
+      where: { id: req.params.id },
+      include: { items: true },
+    });
+
+    if (!original) {
+      res.status(404).json({ error: "Quote not found" });
+      return;
+    }
+
+    const duplicate = await prisma.quote.create({
+      data: {
+        customerName: `${original.customerName} (Copy)`,
+        customerHandle: original.customerHandle,
+        orderId: original.orderId,
+        exchangeRate: original.exchangeRate,
+        fixedFeeUsd: original.fixedFeeUsd,
+        shippingPerKgUsd: original.shippingPerKgUsd,
+        insuranceRate: original.insuranceRate,
+        haulFeeUsd: original.haulFeeUsd,
+        items: {
+          create: original.items.map((item) => ({
+            link: item.link,
+            name: item.name,
+            yuan: item.yuan,
+            type: item.type,
+            weightGrams: item.weightGrams,
+            include: item.include,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    res.status(201).json(duplicate);
+  } catch (error) {
+    console.error("POST /quotes/:id/duplicate error:", error);
+    res.status(500).json({ error: "Failed to duplicate quote" });
+  }
+});
+
 // DELETE /api/quotes/:id
 router.delete("/:id", async (req: Request<{ id: string }>, res: Response) => {
   try {

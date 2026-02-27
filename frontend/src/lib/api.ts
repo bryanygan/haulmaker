@@ -85,6 +85,10 @@ export async function deleteQuote(id: string): Promise<void> {
   return request<void>(`/quotes/${id}`, { method: "DELETE" });
 }
 
+export async function duplicateQuote(id: string): Promise<Quote> {
+  return request<Quote>(`/quotes/${id}/duplicate`, { method: "POST" });
+}
+
 // Items
 export async function createItem(quoteId: string, data: CreateItemPayload): Promise<Item> {
   return request<Item>(`/quotes/${quoteId}/items`, {
@@ -102,4 +106,22 @@ export async function updateItem(id: string, data: UpdateItemPayload): Promise<I
 
 export async function deleteItem(id: string): Promise<void> {
   return request<void>(`/items/${id}`, { method: "DELETE" });
+}
+
+// AI Weight Estimation
+export interface WeightEstimate {
+  weightGrams: number;
+  confidence: "low" | "medium" | "high";
+  reasoning: string;
+}
+
+export async function estimateWeight(
+  name: string,
+  type: string,
+  link?: string
+): Promise<WeightEstimate> {
+  return request<WeightEstimate>("/estimate-weight", {
+    method: "POST",
+    body: JSON.stringify({ name, type, link }),
+  });
 }
