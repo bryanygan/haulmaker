@@ -1,13 +1,13 @@
 import { Router, Request, Response } from "express";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 const router = Router();
 
 // POST /api/estimate-weight
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) {
+    const GROQ_API_KEY = process.env.GROQ_API_KEY;
+    if (!GROQ_API_KEY) {
       res.status(500).json({ error: "AI not configured" });
       return;
     }
@@ -19,8 +19,7 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const groq = new Groq({ apiKey: GROQ_API_KEY });
 
     const prompt = `You are a shipping weight estimation expert for clothing and fashion items, specifically for items purchased from Chinese marketplaces (Taobao, Weidian, 1688) and shipped internationally.
 
@@ -39,8 +38,14 @@ Consider:
 Respond with ONLY a JSON object in this exact format, no other text:
 {"weightGrams": <number>, "confidence": "<low|medium|high>", "reasoning": "<brief 1-sentence explanation>"}`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
+    const result = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      max_tokens: 150,
+    });
+
+    const text = result.choices[0]?.message?.content?.trim() || "";
 
     // Extract JSON from response (handle markdown code blocks)
     const jsonMatch = text.match(/\{[\s\S]*\}/);

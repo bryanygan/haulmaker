@@ -34,29 +34,6 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Debug endpoint (temporary - remove after diagnosing)
-app.get("/api/debug", async (_req, res) => {
-  try {
-    const { prisma } = await import("./lib/prisma");
-    const count = await prisma.quote.count();
-    res.json({
-      db: "connected",
-      quoteCount: count,
-      env: {
-        DATABASE_URL: process.env.DATABASE_URL ? "set (" + process.env.DATABASE_URL.substring(0, 20) + "...)" : "NOT SET",
-        FRONTEND_URL: process.env.FRONTEND_URL || "NOT SET",
-        NODE_ENV: process.env.NODE_ENV || "NOT SET",
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      db: "error",
-      error: String(error),
-      stack: (error as Error).stack?.split("\n").slice(0, 5),
-    });
-  }
-});
-
 // Auth routes (public)
 app.use("/api/auth", authRouter);
 
