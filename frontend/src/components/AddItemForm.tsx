@@ -12,7 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles, Loader2 } from "lucide-react";
+import { estimateWeight } from "@/lib/api";
+import { toast } from "sonner";
 
 interface AddItemFormProps {
   onAdd: (item: CreateItemPayload) => Promise<void>;
@@ -25,6 +27,7 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
   const [type, setType] = useState<ItemType>("tee");
   const [weightGrams, setWeightGrams] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [estimating, setEstimating] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -100,15 +103,47 @@ export function AddItemForm({ onAdd }: AddItemFormProps) {
         </div>
         <div className="space-y-1">
           <Label htmlFor="item-weight">Weight (g) <span className="text-muted-foreground">(optional)</span></Label>
-          <Input
-            id="item-weight"
-            type="number"
-            step="1"
-            min="0"
-            value={weightGrams}
-            onChange={(e) => setWeightGrams(e.target.value)}
-            placeholder="Auto from type"
-          />
+          <div className="flex gap-1.5">
+            <Input
+              id="item-weight"
+              type="number"
+              step="1"
+              min="0"
+              value={weightGrams}
+              onChange={(e) => setWeightGrams(e.target.value)}
+              placeholder="Auto from type"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="shrink-0"
+              disabled={estimating || !name.trim()}
+              title={!name.trim() ? "Enter a name first" : "AI weight estimate"}
+              onClick={async () => {
+                setEstimating(true);
+                try {
+                  const result = await estimateWeight(name.trim(), type, link.trim() || undefined);
+                  setWeightGrams(String(result.weightGrams));
+                  const dot = result.confidence === "high" ? "🟢" : result.confidence === "medium" ? "🟡" : "🔴";
+                  toast.success(
+                    `${dot} Estimated ${result.weightGrams}g (${result.confidence})`,
+                    { description: result.reasoning }
+                  );
+                } catch {
+                  toast.error("Failed to estimate weight");
+                } finally {
+                  setEstimating(false);
+                }
+              }}
+            >
+              {estimating ? (
+                <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+              ) : (
+                <Sparkles className="h-4 w-4 text-purple-500" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
       <Button type="submit" disabled={submitting || !link.trim() || !name.trim() || !yuan.trim()}>
