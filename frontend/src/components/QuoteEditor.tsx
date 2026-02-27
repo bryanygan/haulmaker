@@ -6,7 +6,7 @@ import { Quote, CreateItemPayload, UpdateQuotePayload, UpdateItemPayload, QuoteS
 import { getQuote, updateQuote, createItem, updateItem, deleteItem } from "@/lib/api";
 import { computeTotals } from "@/lib/calculations";
 import { AddItemForm } from "@/components/AddItemForm";
-import { ItemsTable } from "@/components/ItemsTable";
+import { ItemsTable, ItemsViewMode } from "@/components/ItemsTable";
 import { SettingsCard } from "@/components/SettingsCard";
 import { NotesCard } from "@/components/NotesCard";
 import { SummaryCard } from "@/components/SummaryCard";
@@ -20,13 +20,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Table } from "lucide-react";
 import { toast } from "sonner";
 
 export function QuoteEditor({ id }: { id: string }) {
   const router = useRouter();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ItemsViewMode>(() => {
+    if (typeof window === "undefined") return "cards";
+    return (localStorage.getItem("haulmaker_view") as ItemsViewMode) || "cards";
+  });
+
+  const toggleViewMode = useCallback(() => {
+    setViewMode((prev) => {
+      const next = prev === "cards" ? "table" : "cards";
+      localStorage.setItem("haulmaker_view", next);
+      return next;
+    });
+  }, []);
 
   const fetchQuote = useCallback(async () => {
     try {
@@ -177,14 +189,23 @@ export function QuoteEditor({ id }: { id: string }) {
         {/* Left column: items (shown second on mobile) */}
         <div className="order-2 space-y-6 lg:order-1">
           <AddItemForm onAdd={handleAddItem} />
-          <div>
-            <ItemsTable
-              items={quote.items}
-              exchangeRate={quote.exchangeRate}
-              fixedFeeUsd={quote.fixedFeeUsd}
-              onUpdateItem={handleUpdateItem}
-              onDeleteItem={handleDeleteItem}
-            />
+          <div className="space-y-2">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={toggleViewMode} title={viewMode === "cards" ? "Switch to table view" : "Switch to card view"}>
+                {viewMode === "cards" ? <Table className="mr-1.5 h-4 w-4" /> : <LayoutGrid className="mr-1.5 h-4 w-4" />}
+                {viewMode === "cards" ? "Table" : "Cards"}
+              </Button>
+            </div>
+            <div className={viewMode === "table" ? "overflow-x-auto" : ""}>
+              <ItemsTable
+                items={quote.items}
+                exchangeRate={quote.exchangeRate}
+                fixedFeeUsd={quote.fixedFeeUsd}
+                onUpdateItem={handleUpdateItem}
+                onDeleteItem={handleDeleteItem}
+                viewMode={viewMode}
+              />
+            </div>
           </div>
           {totals.refundedItems.length > 0 && (
             <div className="rounded-lg border border-red-200 dark:border-red-800">

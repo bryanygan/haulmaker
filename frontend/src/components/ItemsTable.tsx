@@ -17,12 +17,15 @@ import {
 import { Trash2, ExternalLink, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+export type ItemsViewMode = "table" | "cards";
+
 interface ItemsTableProps {
   items: Item[];
   exchangeRate: number;
   fixedFeeUsd: number;
   onUpdateItem: (id: string, data: UpdateItemPayload) => Promise<void>;
   onDeleteItem: (id: string) => Promise<void>;
+  viewMode: ItemsViewMode;
 }
 
 interface EditingCell {
@@ -36,6 +39,7 @@ export function ItemsTable({
   fixedFeeUsd,
   onUpdateItem,
   onDeleteItem,
+  viewMode,
 }: ItemsTableProps) {
   const [editing, setEditing] = useState<EditingCell | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -209,8 +213,8 @@ export function ItemsTable({
         </div>
       )}
 
-      {/* Card layout for narrow screens */}
-      <div className="xl:hidden divide-y">
+      {/* Card layout */}
+      <div className={viewMode === "cards" ? "divide-y" : "hidden"}>
         {items.map((item) => {
           const usd = computeItemUsd(item.yuan, exchangeRate, fixedFeeUsd);
           const weight = getItemWeight(item);
@@ -351,8 +355,8 @@ export function ItemsTable({
         })}
       </div>
 
-      {/* Table layout for wide screens */}
-      <table className="hidden xl:table w-full text-sm">
+      {/* Table layout */}
+      <table className={viewMode === "table" ? "w-full text-sm" : "hidden"}>
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-3 py-2 text-left font-medium">Include</th>
