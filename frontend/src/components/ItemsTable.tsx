@@ -40,6 +40,8 @@ export function ItemsTable({
   const [editing, setEditing] = useState<EditingCell | null>(null);
   const [editValue, setEditValue] = useState("");
   const [estimatingId, setEstimatingId] = useState<string | null>(null);
+  const [bulkEstimating, setBulkEstimating] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -109,6 +111,45 @@ export function ItemsTable({
     [onUpdateItem]
   );
 
+  const handleBulkEstimate = useCallback(async () => {
+    const itemsToEstimate = items.filter(
+      (item) => item.include && (item.weightGrams === null || item.weightGrams === undefined)
+    );
+
+    if (itemsToEstimate.length === 0) {
+      toast.info("All included items already have custom weights");
+      return;
+    }
+
+    setBulkEstimating(true);
+    setBulkProgress({ current: 0, total: itemsToEstimate.length });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < itemsToEstimate.length; i++) {
+      const item = itemsToEstimate[i];
+      setBulkProgress({ current: i + 1, total: itemsToEstimate.length });
+
+      try {
+        const result = await estimateWeight(item.name, item.type, item.link);
+        await onUpdateItem(item.id, { weightGrams: result.weightGrams });
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    setBulkEstimating(false);
+    setBulkProgress({ current: 0, total: 0 });
+
+    if (failCount === 0) {
+      toast.success(`Estimated weights for ${successCount} items`);
+    } else {
+      toast.warning(`Estimated ${successCount} items, ${failCount} failed`);
+    }
+  }, [items, onUpdateItem]);
+
   if (items.length === 0) {
     return (
       <div className="rounded-lg border p-8 text-center text-muted-foreground">
@@ -119,6 +160,28 @@ export function ItemsTable({
 
   return (
     <div className="overflow-x-auto rounded-lg border">
+      {items.some((i) => i.include && (i.weightGrams === null || i.weightGrams === undefined)) && (
+        <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleBulkEstimate}
+            disabled={bulkEstimating}
+          >
+            {bulkEstimating ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin text-purple-500" />
+                Estimating {bulkProgress.current}/{bulkProgress.total}...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-1.5 h-3.5 w-3.5 text-purple-500" />
+                Estimate All Missing Weights
+              </>
+            )}
+          </Button>
+        </div>
+      )}
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50">
@@ -252,7 +315,7 @@ export function ItemsTable({
                       size="icon"
                       className="h-7 w-7 shrink-0"
                       onClick={() => handleEstimateWeight(item)}
-                      disabled={isEstimating}
+                      disabled={isEstimating || bulkEstimating}
                       title="AI weight estimate"
                     >
                       {isEstimating ? (
@@ -281,7 +344,7 @@ export function ItemsTable({
                       href={item.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                      className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <ExternalLink className="h-3 w-3" />

@@ -24,11 +24,14 @@ router.post("/", async (req: Request, res: Response) => {
       customerName,
       customerHandle,
       orderId,
+      customerId,
       exchangeRate,
       fixedFeeUsd,
       shippingPerKgUsd,
       insuranceRate,
       haulFeeUsd,
+      status,
+      notes,
     } = req.body;
 
     if (!customerName) {
@@ -41,11 +44,14 @@ router.post("/", async (req: Request, res: Response) => {
         customerName,
         customerHandle,
         orderId,
+        ...(customerId !== undefined && { customerId }),
         ...(exchangeRate !== undefined && { exchangeRate }),
         ...(fixedFeeUsd !== undefined && { fixedFeeUsd }),
         ...(shippingPerKgUsd !== undefined && { shippingPerKgUsd }),
         ...(insuranceRate !== undefined && { insuranceRate }),
         ...(haulFeeUsd !== undefined && { haulFeeUsd }),
+        ...(status !== undefined && { status }),
+        ...(notes !== undefined && { notes }),
       },
       include: { items: true },
     });
@@ -83,11 +89,14 @@ router.put("/:id", async (req: Request<{ id: string }>, res: Response) => {
       customerName,
       customerHandle,
       orderId,
+      customerId,
       exchangeRate,
       fixedFeeUsd,
       shippingPerKgUsd,
       insuranceRate,
       haulFeeUsd,
+      status,
+      notes,
     } = req.body;
 
     const quote = await prisma.quote.update({
@@ -96,11 +105,14 @@ router.put("/:id", async (req: Request<{ id: string }>, res: Response) => {
         ...(customerName !== undefined && { customerName }),
         ...(customerHandle !== undefined && { customerHandle }),
         ...(orderId !== undefined && { orderId }),
+        ...(customerId !== undefined && { customerId }),
         ...(exchangeRate !== undefined && { exchangeRate }),
         ...(fixedFeeUsd !== undefined && { fixedFeeUsd }),
         ...(shippingPerKgUsd !== undefined && { shippingPerKgUsd }),
         ...(insuranceRate !== undefined && { insuranceRate }),
         ...(haulFeeUsd !== undefined && { haulFeeUsd }),
+        ...(status !== undefined && { status }),
+        ...(notes !== undefined && { notes }),
       },
       include: { items: true },
     });
@@ -129,6 +141,7 @@ router.post("/:id/duplicate", async (req: Request<{ id: string }>, res: Response
         customerName: `${original.customerName} (Copy)`,
         customerHandle: original.customerHandle,
         orderId: original.orderId,
+        customerId: original.customerId,
         exchangeRate: original.exchangeRate,
         fixedFeeUsd: original.fixedFeeUsd,
         shippingPerKgUsd: original.shippingPerKgUsd,

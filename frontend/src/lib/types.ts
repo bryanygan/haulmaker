@@ -1,13 +1,36 @@
+export type QuoteStatus = "draft" | "sent" | "paid" | "shipped" | "complete";
+
+export const QUOTE_STATUSES: QuoteStatus[] = ["draft", "sent", "paid", "shipped", "complete"];
+
+export const STATUS_COLORS: Record<QuoteStatus, string> = {
+  draft:    "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+  sent:     "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  paid:     "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
+  shipped:  "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
+  complete: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
+};
+
+export interface Customer {
+  id: string;
+  name: string;
+  discordHandle: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Quote {
   id: string;
   customerName: string;
   customerHandle: string | null;
   orderId: string | null;
+  customerId: string | null;
   exchangeRate: number;
   fixedFeeUsd: number;
   shippingPerKgUsd: number;
   insuranceRate: number;
   haulFeeUsd: number;
+  status: QuoteStatus;
+  notes: string | null;
   createdAt: string;
   updatedAt: string;
   items: Item[];
@@ -51,6 +74,7 @@ export interface CreateQuotePayload {
   customerName: string;
   customerHandle?: string;
   orderId?: string;
+  customerId?: string;
 }
 
 export interface UpdateQuotePayload {
@@ -62,6 +86,8 @@ export interface UpdateQuotePayload {
   shippingPerKgUsd?: number;
   insuranceRate?: number;
   haulFeeUsd?: number;
+  status?: QuoteStatus;
+  notes?: string;
 }
 
 export interface CreateItemPayload {

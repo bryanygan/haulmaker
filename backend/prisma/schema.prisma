@@ -7,17 +7,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Customer {
+  id             String   @id @default(uuid())
+  name           String
+  discordHandle  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  quotes         Quote[]
+}
+
 model Quote {
   id               String   @id @default(uuid())
   customerName     String
   customerHandle   String?
   orderId          String?
 
+  customerId       String?
+  customer         Customer? @relation(fields: [customerId], references: [id])
+
   exchangeRate     Float    @default(6.5)
   fixedFeeUsd      Float    @default(2)
   shippingPerKgUsd Float    @default(18)
   insuranceRate    Float    @default(0.15)
   haulFeeUsd       Float    @default(10)
+
+  status           String   @default("draft")
+  notes            String?
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt

@@ -1,6 +1,7 @@
 import {
   Quote,
   Item,
+  Customer,
   CreateQuotePayload,
   UpdateQuotePayload,
   CreateItemPayload,
@@ -106,6 +107,18 @@ export async function updateItem(id: string, data: UpdateItemPayload): Promise<I
 
 export async function deleteItem(id: string): Promise<void> {
   return request<void>(`/items/${id}`, { method: "DELETE" });
+}
+
+// Customers
+export async function getCustomers(): Promise<Customer[]> {
+  return request<Customer[]>("/customers");
+}
+
+export async function createCustomer(data: { name: string; discordHandle?: string }): Promise<Customer> {
+  return request<Customer>("/customers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 // AI Weight Estimation

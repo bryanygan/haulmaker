@@ -6,6 +6,7 @@ import { requireAuth } from "./middleware/auth";
 import quotesRouter from "./routes/quotes";
 import itemsRouter from "./routes/items";
 import estimateRouter from "./routes/estimate";
+import customersRouter from "./routes/customers";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -41,6 +42,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/quotes", requireAuth, quotesRouter);
 app.use("/api", requireAuth, itemsRouter);
 app.use("/api/estimate-weight", requireAuth, estimateRouter);
+app.use("/api/customers", requireAuth, customersRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

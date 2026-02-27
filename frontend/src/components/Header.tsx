@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearToken, isAuthenticated } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogOut } from "lucide-react";
 
 export function Header() {
@@ -26,12 +27,15 @@ export function Header() {
         <a href="/quotes" className="text-lg font-bold">
           ZR Hauls
         </a>
-        {showLogout && (
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Logout
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          {showLogout && (
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          )}
+        </div>
       </div>
     </header>
   );

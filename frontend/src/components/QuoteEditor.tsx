@@ -2,16 +2,24 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Quote, CreateItemPayload, UpdateQuotePayload, UpdateItemPayload } from "@/lib/types";
+import { Quote, CreateItemPayload, UpdateQuotePayload, UpdateItemPayload, QuoteStatus, QUOTE_STATUSES, STATUS_COLORS } from "@/lib/types";
 import { getQuote, updateQuote, createItem, updateItem, deleteItem } from "@/lib/api";
 import { computeTotals } from "@/lib/calculations";
 import { AddItemForm } from "@/components/AddItemForm";
 import { ItemsTable } from "@/components/ItemsTable";
 import { SettingsCard } from "@/components/SettingsCard";
+import { NotesCard } from "@/components/NotesCard";
 import { SummaryCard } from "@/components/SummaryCard";
 import { OutputCard } from "@/components/OutputCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
@@ -134,17 +142,32 @@ export function QuoteEditor({ id }: { id: string }) {
         <Button variant="ghost" size="icon" onClick={() => router.push("/quotes")}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold">{quote.customerName}</h1>
           <p className="text-sm text-muted-foreground">
             {quote.orderId && <span>{quote.orderId} &middot; </span>}
             Last updated {new Date(quote.updatedAt).toLocaleString()}
           </p>
         </div>
+        <Select
+          value={quote.status}
+          onValueChange={(v) => handleUpdateQuote({ status: v as QuoteStatus })}
+        >
+          <SelectTrigger className={`h-8 w-32 text-xs font-medium ${STATUS_COLORS[quote.status as QuoteStatus] || ""}`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {QUOTE_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {hasWeightWarning && (
-        <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+        <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
           Some custom items are missing weights. Shipping estimate may be inaccurate.
         </div>
       )}
@@ -168,6 +191,7 @@ export function QuoteEditor({ id }: { id: string }) {
         {/* Right column: settings, summary, output (shown first on mobile) */}
         <div className="order-1 space-y-6 lg:order-2">
           <SettingsCard quote={quote} onUpdate={handleUpdateQuote} />
+          <NotesCard quote={quote} onUpdate={handleUpdateQuote} />
           <SummaryCard totals={totals} />
           <OutputCard quote={quote} totals={totals} />
         </div>

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Quote } from "@/lib/types";
-import { getQuotes, createQuote, deleteQuote, duplicateQuote } from "@/lib/api";
+import { Quote, Customer, QuoteStatus, QUOTE_STATUSES, STATUS_COLORS } from "@/lib/types";
+import { getQuotes, createQuote, deleteQuote, duplicateQuote, getCustomers, createCustomer } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, Search, Copy } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,33 +53,54 @@ export default function QuotesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<QuoteStatus | "all">("all");
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("new");
+  const [saveAsCustomer, setSaveAsCustomer] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState("");
   const [newCustomerHandle, setNewCustomerHandle] = useState("");
   const [newOrderId, setNewOrderId] = useState("");
 
-  const fetchQuotes = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const data = await getQuotes();
-      setQuotes(data);
+      const [quotesData, customersData] = await Promise.all([getQuotes(), getCustomers()]);
+      setQuotes(quotesData);
+      setCustomers(customersData);
     } catch {
-      toast.error("Failed to load quotes");
+      toast.error("Failed to load data");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchQuotes();
-  }, [fetchQuotes]);
+    fetchData();
+  }, [fetchData]);
 
   const filtered = quotes.filter((q) => {
     const term = search.toLowerCase();
-    return (
+    const matchesSearch =
       q.customerName.toLowerCase().includes(term) ||
       (q.orderId && q.orderId.toLowerCase().includes(term)) ||
-      (q.customerHandle && q.customerHandle.toLowerCase().includes(term))
-    );
+      (q.customerHandle && q.customerHandle.toLowerCase().includes(term));
+    const matchesStatus = statusFilter === "all" || q.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
+
+  function handleSelectCustomer(value: string) {
+    setSelectedCustomerId(value);
+    if (value !== "new") {
+      const customer = customers.find((c) => c.id === value);
+      if (customer) {
+        setNewCustomerName(customer.name);
+        setNewCustomerHandle(customer.discordHandle || "");
+        setSaveAsCustomer(false);
+      }
+    } else {
+      setNewCustomerName("");
+      setNewCustomerHandle("");
+    }
+  }
 
   async function handleCreate() {
     if (!newCustomerName.trim()) {
@@ -79,15 +108,31 @@ export default function QuotesPage() {
       return;
     }
     try {
+      let customerId: string | undefined;
+
+      if (selectedCustomerId !== "new") {
+        customerId = selectedCustomerId;
+      } else if (saveAsCustomer) {
+        const customer = await createCustomer({
+          name: newCustomerName.trim(),
+          discordHandle: newCustomerHandle.trim() || undefined,
+        });
+        customerId = customer.id;
+        setCustomers((prev) => [...prev, customer]);
+      }
+
       const quote = await createQuote({
         customerName: newCustomerName.trim(),
         customerHandle: newCustomerHandle.trim() || undefined,
         orderId: newOrderId.trim() || undefined,
+        customerId,
       });
       setDialogOpen(false);
       setNewCustomerName("");
       setNewCustomerHandle("");
       setNewOrderId("");
+      setSelectedCustomerId("new");
+      setSaveAsCustomer(false);
       toast.success("Quote created");
       router.push(`/editor?id=${quote.id}`);
     } catch {
@@ -137,14 +182,35 @@ export default function QuotesPage() {
         </Button>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search by customer or order ID..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by customer or order ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex gap-1.5 flex-wrap">
+          <Button
+            variant={statusFilter === "all" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setStatusFilter("all")}
+          >
+            All
+          </Button>
+          {QUOTE_STATUSES.map((s) => (
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusFilter(s)}
+            >
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {loading ? (
@@ -179,7 +245,12 @@ export default function QuotesPage() {
                       </p>
                     )}
                   </div>
-                  {quote.orderId && <Badge variant="outline" className="shrink-0">{quote.orderId}</Badge>}
+                  <div className="flex shrink-0 gap-1.5">
+                    <Badge className={`${STATUS_COLORS[quote.status as QuoteStatus] || STATUS_COLORS.draft} border-0`}>
+                      {quote.status}
+                    </Badge>
+                    {quote.orderId && <Badge variant="outline">{quote.orderId}</Badge>}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -221,6 +292,24 @@ export default function QuotesPage() {
             <DialogDescription>Create a new haul quote for a customer.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {customers.length > 0 && (
+              <div className="space-y-2">
+                <Label>Customer</Label>
+                <Select value={selectedCustomerId} onValueChange={handleSelectCustomer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a customer..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">+ New Customer</SelectItem>
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}{c.discordHandle ? ` (${c.discordHandle})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="customerName">Customer Name *</Label>
               <Input
@@ -249,6 +338,12 @@ export default function QuotesPage() {
                 placeholder="e.g. ZR-001"
               />
             </div>
+            {selectedCustomerId === "new" && newCustomerName.trim() && (
+              <div className="flex items-center gap-2">
+                <Switch checked={saveAsCustomer} onCheckedChange={setSaveAsCustomer} />
+                <Label className="text-sm text-muted-foreground">Save as returning customer</Label>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
