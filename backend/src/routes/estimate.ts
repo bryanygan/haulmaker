@@ -62,7 +62,7 @@ Respond with ONLY a JSON object in this exact format, no other text:
       return;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as { choices?: { message?: { content?: string } }[] };
     const text = data.choices?.[0]?.message?.content?.trim() || "";
 
     // Extract JSON from response (handle markdown code blocks)
