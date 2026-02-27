@@ -158,8 +158,34 @@ export function ItemsTable({
     );
   }
 
+  // Shared inline edit input renderer
+  function renderEditInput(
+    item: Item,
+    field: string,
+    type: string = "text",
+    className: string = "h-8",
+    step?: string
+  ) {
+    if (editing?.itemId !== item.id || editing.field !== field) return null;
+    return (
+      <Input
+        ref={inputRef}
+        type={type}
+        step={step}
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={commitEdit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commitEdit();
+          if (e.key === "Escape") cancelEdit();
+        }}
+        className={className}
+      />
+    );
+  }
+
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="rounded-lg border">
       {items.some((i) => i.include && (i.weightGrams === null || i.weightGrams === undefined)) && (
         <div className="flex items-center gap-2 border-b bg-muted/30 px-3 py-2">
           <Button
@@ -182,7 +208,151 @@ export function ItemsTable({
           </Button>
         </div>
       )}
-      <table className="w-full text-sm">
+
+      {/* Card layout for narrow screens */}
+      <div className="xl:hidden divide-y">
+        {items.map((item) => {
+          const usd = computeItemUsd(item.yuan, exchangeRate, fixedFeeUsd);
+          const weight = getItemWeight(item);
+          const isDefault = item.weightGrams === null || item.weightGrams === undefined;
+          const isEstimating = estimatingId === item.id;
+
+          return (
+            <div
+              key={item.id}
+              className={`p-3 space-y-2 ${!item.include ? "opacity-50" : ""} ${item.status === "refunded" ? "bg-red-50/50 dark:bg-red-950/20" : ""}`}
+            >
+              {/* Row 1: Include + Name + Delete */}
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={item.include}
+                  onCheckedChange={(checked) => onUpdateItem(item.id, { include: checked })}
+                />
+                <div className="flex-1 min-w-0">
+                  {renderEditInput(item, "name") || (
+                    <span
+                      className="cursor-pointer rounded px-1 hover:bg-muted font-medium truncate block"
+                      onClick={() => startEdit(item.id, "name", item.name)}
+                    >
+                      {item.name}
+                    </span>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => onDeleteItem(item.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+
+              {/* Row 2: Type + Status + Link */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Select
+                  value={item.type}
+                  onValueChange={(v) => onUpdateItem(item.id, { type: v as ItemType })}
+                >
+                  <SelectTrigger className="h-7 w-24 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ITEM_TYPES.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t.charAt(0).toUpperCase() + t.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={item.status || "none"}
+                  onValueChange={(v) =>
+                    onUpdateItem(item.id, { status: v === "none" ? null : (v as ItemStatus) })
+                  }
+                >
+                  <SelectTrigger className={`h-7 w-[100px] text-xs font-medium ${item.status ? ITEM_STATUS_COLORS[item.status] + " border-0" : ""}`}>
+                    <SelectValue placeholder="--" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">--</SelectItem>
+                    {ITEM_STATUSES.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <a
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Link
+                </a>
+              </div>
+
+              {/* Row 3: Yuan, USD, Weight */}
+              <div className="flex items-center gap-3 text-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground text-xs">Yuan:</span>
+                  {renderEditInput(item, "yuan", "number", "h-7 w-20 text-right text-xs", "0.01") || (
+                    <span
+                      className="cursor-pointer rounded px-1 hover:bg-muted"
+                      onClick={() => startEdit(item.id, "yuan", String(item.yuan))}
+                    >
+                      ¥{item.yuan.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground text-xs">USD:</span>
+                  <span className="font-medium">${usd.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground text-xs">Wt:</span>
+                  {renderEditInput(item, "weightGrams", "number", "h-7 w-16 text-right text-xs", "1") || (
+                    <span
+                      className="cursor-pointer rounded px-1 hover:bg-muted"
+                      onClick={() =>
+                        startEdit(
+                          item.id,
+                          "weightGrams",
+                          item.weightGrams !== null && item.weightGrams !== undefined
+                            ? String(item.weightGrams)
+                            : ""
+                        )
+                      }
+                      title={isDefault ? `Default: ${DEFAULT_WEIGHTS[item.type as ItemType]}g` : "Custom weight"}
+                    >
+                      {weight}g{isDefault ? " *" : ""}
+                    </span>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => handleEstimateWeight(item)}
+                    disabled={isEstimating || bulkEstimating}
+                    title="AI weight estimate"
+                  >
+                    {isEstimating ? (
+                      <Loader2 className="h-3 w-3 animate-spin text-purple-500" />
+                    ) : (
+                      <Sparkles className="h-3 w-3 text-purple-500" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Table layout for wide screens */}
+      <table className="hidden xl:table w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-3 py-2 text-left font-medium">Include</th>
@@ -215,19 +385,7 @@ export function ItemsTable({
                   />
                 </td>
                 <td className="px-3 py-2">
-                  {editing?.itemId === item.id && editing.field === "name" ? (
-                    <Input
-                      ref={inputRef}
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") cancelEdit();
-                      }}
-                      className="h-8"
-                    />
-                  ) : (
+                  {renderEditInput(item, "name") || (
                     <span
                       className="cursor-pointer rounded px-1 hover:bg-muted"
                       onClick={() => startEdit(item.id, "name", item.name)}
@@ -254,21 +412,7 @@ export function ItemsTable({
                   </Select>
                 </td>
                 <td className="px-3 py-2 text-right">
-                  {editing?.itemId === item.id && editing.field === "yuan" ? (
-                    <Input
-                      ref={inputRef}
-                      type="number"
-                      step="0.01"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") cancelEdit();
-                      }}
-                      className="h-8 w-24 text-right"
-                    />
-                  ) : (
+                  {renderEditInput(item, "yuan", "number", "h-8 w-24 text-right", "0.01") || (
                     <span
                       className="cursor-pointer rounded px-1 hover:bg-muted"
                       onClick={() => startEdit(item.id, "yuan", String(item.yuan))}
@@ -280,21 +424,7 @@ export function ItemsTable({
                 <td className="px-3 py-2 text-right font-medium">${usd.toFixed(2)}</td>
                 <td className="px-3 py-2 text-right">
                   <div className="flex items-center justify-end gap-1">
-                    {editing?.itemId === item.id && editing.field === "weightGrams" ? (
-                      <Input
-                        ref={inputRef}
-                        type="number"
-                        step="1"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={commitEdit}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") commitEdit();
-                          if (e.key === "Escape") cancelEdit();
-                        }}
-                        className="h-8 w-20 text-right"
-                      />
-                    ) : (
+                    {renderEditInput(item, "weightGrams", "number", "h-8 w-20 text-right", "1") || (
                       <span
                         className="cursor-pointer rounded px-1 hover:bg-muted"
                         onClick={() =>
@@ -328,19 +458,7 @@ export function ItemsTable({
                   </div>
                 </td>
                 <td className="px-3 py-2">
-                  {editing?.itemId === item.id && editing.field === "link" ? (
-                    <Input
-                      ref={inputRef}
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={commitEdit}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") commitEdit();
-                        if (e.key === "Escape") cancelEdit();
-                      }}
-                      className="h-8"
-                    />
-                  ) : (
+                  {renderEditInput(item, "link") || (
                     <a
                       href={item.link}
                       target="_blank"
