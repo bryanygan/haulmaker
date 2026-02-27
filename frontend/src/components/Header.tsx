@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { clearToken, isAuthenticated } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,11 @@ import { LogOut } from "lucide-react";
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const showLogout = pathname !== "/login" && isAuthenticated();
+  const [showLogout, setShowLogout] = useState(false);
+
+  useEffect(() => {
+    setShowLogout(pathname !== "/login" && isAuthenticated());
+  }, [pathname]);
 
   function handleLogout() {
     clearToken();

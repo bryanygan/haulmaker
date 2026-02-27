@@ -23,7 +23,7 @@ app.use(cors({
     // Allow localhost for dev
     if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
 
-    callback(new Error("Not allowed by CORS"));
+    callback(null, false);
   },
   credentials: true,
 }));
