@@ -1,6 +1,6 @@
 # ZR Hauls Quote Builder
 
-Internal tool for generating haul quotes and Discord-formatted messages. Replaces a Google Sheets workflow with a persistent, cross-device web app featuring AI-powered weight estimation.
+Internal tool for generating haul quotes and Discord-formatted messages. Replaces a Google Sheets workflow with a persistent, cross-device web app featuring AI-powered weight estimation. Completely vibe-coded, except for some manual debugging. AI coding has come very far, and I'm all ears. 
 
 **Live:** [haulmaker.pages.dev](https://haulmaker.pages.dev)
 
