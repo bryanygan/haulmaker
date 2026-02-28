@@ -7,7 +7,7 @@ const router = Router();
 router.get("/", async (_req: Request, res: Response) => {
   try {
     const quotes = await prisma.quote.findMany({
-      include: { items: true },
+      include: { items: { orderBy: { position: "asc" } } },
       orderBy: { updatedAt: "desc" },
     });
     res.json(quotes);
@@ -53,7 +53,7 @@ router.post("/", async (req: Request, res: Response) => {
         ...(status !== undefined && { status }),
         ...(notes !== undefined && { notes }),
       },
-      include: { items: true },
+      include: { items: { orderBy: { position: "asc" } } },
     });
     res.status(201).json(quote);
   } catch (error) {
@@ -67,7 +67,7 @@ router.get("/:id", async (req: Request<{ id: string }>, res: Response) => {
   try {
     const quote = await prisma.quote.findUnique({
       where: { id: req.params.id },
-      include: { items: true },
+      include: { items: { orderBy: { position: "asc" } } },
     });
 
     if (!quote) {
@@ -114,7 +114,7 @@ router.put("/:id", async (req: Request<{ id: string }>, res: Response) => {
         ...(status !== undefined && { status }),
         ...(notes !== undefined && { notes }),
       },
-      include: { items: true },
+      include: { items: { orderBy: { position: "asc" } } },
     });
     res.json(quote);
   } catch (error) {
@@ -128,7 +128,7 @@ router.post("/:id/duplicate", async (req: Request<{ id: string }>, res: Response
   try {
     const original = await prisma.quote.findUnique({
       where: { id: req.params.id },
-      include: { items: true },
+      include: { items: { orderBy: { position: "asc" } } },
     });
 
     if (!original) {
@@ -155,10 +155,11 @@ router.post("/:id/duplicate", async (req: Request<{ id: string }>, res: Response
             type: item.type,
             weightGrams: item.weightGrams,
             include: item.include,
+            position: item.position,
           })),
         },
       },
-      include: { items: true },
+      include: { items: { orderBy: { position: "asc" } } },
     });
 
     res.status(201).json(duplicate);

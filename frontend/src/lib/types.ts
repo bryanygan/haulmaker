@@ -58,6 +58,7 @@ export interface Item {
   weightGrams: number | null;
   include: boolean;
   status: ItemStatus | null;
+  position: number;
 }
 
 export type ItemType = "tee" | "hoodie" | "pants" | "shoes" | "accessory" | "custom";

@@ -109,6 +109,13 @@ export async function deleteItem(id: string): Promise<void> {
   return request<void>(`/items/${id}`, { method: "DELETE" });
 }
 
+export async function reorderItems(quoteId: string, itemIds: string[]): Promise<Item[]> {
+  return request<Item[]>(`/quotes/${quoteId}/reorder`, {
+    method: "PUT",
+    body: JSON.stringify({ itemIds }),
+  });
+}
+
 // Customers
 export async function getCustomers(): Promise<Customer[]> {
   return request<Customer[]>("/customers");

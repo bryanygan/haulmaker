@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Quote, CreateItemPayload, UpdateQuotePayload, UpdateItemPayload, QuoteStatus, QUOTE_STATUSES, STATUS_COLORS } from "@/lib/types";
-import { getQuote, updateQuote, createItem, updateItem, deleteItem } from "@/lib/api";
+import { Quote, Item, CreateItemPayload, UpdateQuotePayload, UpdateItemPayload, QuoteStatus, QUOTE_STATUSES, STATUS_COLORS } from "@/lib/types";
+import { getQuote, updateQuote, createItem, updateItem, deleteItem, reorderItems } from "@/lib/api";
 import { computeTotals } from "@/lib/calculations";
 import { AddItemForm } from "@/components/AddItemForm";
 import { ItemsTable, ItemsViewMode } from "@/components/ItemsTable";
@@ -83,17 +83,45 @@ export function QuoteEditor({ id }: { id: string }) {
     [quote]
   );
 
+  const handleReorderItems = useCallback(
+    async (reorderedItems: Item[]) => {
+      if (!quote) return;
+      setQuote((prev) => (prev ? { ...prev, items: reorderedItems } : null));
+      try {
+        await reorderItems(quote.id, reorderedItems.map((i) => i.id));
+      } catch {
+        toast.error("Failed to save order");
+        fetchQuote();
+      }
+    },
+    [quote, fetchQuote]
+  );
+
   const handleUpdateItem = useCallback(
     async (itemId: string, data: UpdateItemPayload) => {
       try {
         const updated = await updateItem(itemId, data);
         setQuote((prev) => {
           if (!prev) return null;
-          return {
-            ...prev,
-            items: prev.items.map((i) => (i.id === itemId ? { ...updated, quoteId: prev.id } : i)),
-          };
+          let newItems = prev.items.map((i) => (i.id === itemId ? { ...updated, quoteId: prev.id } : i));
+          // When include is toggled OFF, move item to the bottom
+          if (data.include === false) {
+            const item = newItems.find((i) => i.id === itemId);
+            if (item) {
+              newItems = [...newItems.filter((i) => i.id !== itemId), item];
+            }
+          }
+          return { ...prev, items: newItems };
         });
+        // Persist reorder when include toggled OFF
+        if (data.include === false) {
+          setQuote((prev) => {
+            if (prev) {
+              reorderItems(prev.id, prev.items.map((i) => i.id)).catch(() => {});
+            }
+            return prev;
+          });
+        }
       } catch {
         toast.error("Failed to update item");
       }
@@ -203,6 +231,7 @@ export function QuoteEditor({ id }: { id: string }) {
                 fixedFeeUsd={quote.fixedFeeUsd}
                 onUpdateItem={handleUpdateItem}
                 onDeleteItem={handleDeleteItem}
+                onReorderItems={handleReorderItems}
                 viewMode={viewMode}
               />
             </div>
