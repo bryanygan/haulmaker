@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Quote, Customer, QuoteStatus, QUOTE_STATUSES, STATUS_COLORS } from "@/lib/types";
-import { getQuotes, createQuote, deleteQuote, duplicateQuote, getCustomers, createCustomer } from "@/lib/api";
+import { Quote, Customer, Item, ItemStatus, ITEM_STATUSES, ITEM_STATUS_COLORS, QuoteStatus, QUOTE_STATUSES, STATUS_COLORS } from "@/lib/types";
+import { getQuotes, createQuote, deleteQuote, duplicateQuote, getCustomers, createCustomer, updateItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Search, Copy } from "lucide-react";
+import { Plus, Trash2, Search, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 function QuoteCardSkeleton() {
@@ -77,15 +77,44 @@ export default function QuotesPage() {
     fetchData();
   }, [fetchData]);
 
+  const term = search.toLowerCase().trim();
+
   const filtered = quotes.filter((q) => {
-    const term = search.toLowerCase();
     const matchesSearch =
+      !term ||
       q.customerName.toLowerCase().includes(term) ||
       (q.orderId && q.orderId.toLowerCase().includes(term)) ||
-      (q.customerHandle && q.customerHandle.toLowerCase().includes(term));
+      (q.customerHandle && q.customerHandle.toLowerCase().includes(term)) ||
+      q.items.some((i) => i.name.toLowerCase().includes(term));
     const matchesStatus = statusFilter === "all" || q.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  // Collect matching items when searching
+  const itemResults = term
+    ? quotes.flatMap((q) =>
+        q.items
+          .filter((i) => i.name.toLowerCase().includes(term))
+          .map((i) => ({ item: i, quote: q }))
+      )
+    : [];
+
+  const handleUpdateItemStatus = useCallback(
+    async (itemId: string, status: ItemStatus | null) => {
+      try {
+        const updated = await updateItem(itemId, { status });
+        setQuotes((prev) =>
+          prev.map((q) => ({
+            ...q,
+            items: q.items.map((i) => (i.id === itemId ? { ...i, status: updated.status as ItemStatus | null } : i)),
+          }))
+        );
+      } catch {
+        toast.error("Failed to update status");
+      }
+    },
+    []
+  );
 
   function handleSelectCustomer(value: string) {
     setSelectedCustomerId(value);
@@ -186,7 +215,7 @@ export default function QuotesPage() {
         <div className="relative max-w-sm flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search by customer or order ID..."
+            placeholder="Search orders or items..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -281,6 +310,80 @@ export default function QuotesPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Item search results */}
+      {itemResults.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            Matching Items ({itemResults.length})
+          </h2>
+          <div className="overflow-hidden rounded-lg border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium">Order</th>
+                  <th className="px-3 py-2 text-left font-medium">Item</th>
+                  <th className="px-3 py-2 text-left font-medium">Link</th>
+                  <th className="px-3 py-2 text-left font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {itemResults.map(({ item, quote: q }) => (
+                  <tr
+                    key={item.id}
+                    className={`border-b transition-colors hover:bg-muted/30 ${!item.include ? "opacity-50" : ""}`}
+                  >
+                    <td className="px-3 py-2">
+                      <button
+                        className="text-left hover:underline"
+                        onClick={() => router.push(`/editor?id=${q.id}`)}
+                      >
+                        <div className="font-medium">{q.customerName}</div>
+                        {q.orderId && (
+                          <div className="text-xs text-muted-foreground">{q.orderId}</div>
+                        )}
+                      </button>
+                    </td>
+                    <td className="px-3 py-2 font-medium">{item.name}</td>
+                    <td className="px-3 py-2">
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-blue-600 hover:underline dark:text-blue-400"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        Link
+                      </a>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Select
+                        value={item.status || "none"}
+                        onValueChange={(v) =>
+                          handleUpdateItemStatus(item.id, v === "none" ? null : (v as ItemStatus))
+                        }
+                      >
+                        <SelectTrigger className={`h-7 w-[110px] text-xs font-medium ${item.status ? ITEM_STATUS_COLORS[item.status] + " border-0" : ""}`}>
+                          <SelectValue placeholder="--" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">--</SelectItem>
+                          {ITEM_STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s.charAt(0).toUpperCase() + s.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
