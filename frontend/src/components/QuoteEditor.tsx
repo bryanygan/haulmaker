@@ -11,6 +11,7 @@ import { SettingsCard } from "@/components/SettingsCard";
 import { NotesCard } from "@/components/NotesCard";
 import { SummaryCard } from "@/components/SummaryCard";
 import { OutputCard } from "@/components/OutputCard";
+import { StatusBoard } from "@/components/StatusBoard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, LayoutGrid, Table } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Table, Kanban } from "lucide-react";
 import { toast } from "sonner";
 
 export function QuoteEditor({ id }: { id: string }) {
@@ -31,6 +32,7 @@ export function QuoteEditor({ id }: { id: string }) {
     if (typeof window === "undefined") return "cards";
     return (localStorage.getItem("haulmaker_view") as ItemsViewMode) || "cards";
   });
+  const [showBoard, setShowBoard] = useState(false);
 
   const toggleViewMode = useCallback(() => {
     setViewMode((prev) => {
@@ -189,6 +191,15 @@ export function QuoteEditor({ id }: { id: string }) {
             Last updated {new Date(quote.updatedAt).toLocaleString()}
           </p>
         </div>
+        <Button
+          variant={showBoard ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowBoard((prev) => !prev)}
+          title="Toggle status board"
+        >
+          <Kanban className="mr-1.5 h-4 w-4" />
+          <span className="hidden sm:inline">Board</span>
+        </Button>
         <Select
           value={quote.status}
           onValueChange={(v) => handleUpdateQuote({ status: v as QuoteStatus })}
@@ -210,6 +221,10 @@ export function QuoteEditor({ id }: { id: string }) {
         <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800 dark:border-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-200">
           Some custom items are missing weights. Shipping estimate may be inaccurate.
         </div>
+      )}
+
+      {showBoard && (
+        <StatusBoard items={quote.items} onUpdateItem={handleUpdateItem} />
       )}
 
       {/* On mobile: summary + output first, then items. On desktop: items left, sidebar right */}
