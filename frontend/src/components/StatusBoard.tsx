@@ -1,7 +1,7 @@
 "use client";
 
 import { Item, ItemStatus, ITEM_STATUSES, ITEM_STATUS_COLORS, UpdateItemPayload } from "@/lib/types";
-import { ExternalLink, GripVertical } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -63,20 +63,14 @@ function DraggableCard({
     <div
       ref={setNodeRef}
       style={style}
-      className="rounded-md border bg-background p-2.5 shadow-sm"
+      className="cursor-grab touch-none rounded-md border bg-background p-2.5 shadow-sm active:cursor-grabbing"
+      {...attributes}
+      {...listeners}
     >
-      <div className="mb-1.5 flex items-start gap-1.5">
-        <button
-          type="button"
-          className="mt-0.5 cursor-grab touch-none text-muted-foreground hover:text-foreground shrink-0"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-3.5 w-3.5" />
-        </button>
+      <div className="mb-1.5">
         <span className="text-sm font-medium leading-snug">{item.name}</span>
       </div>
-      <div className="flex items-center gap-2 pl-5">
+      <div className="flex items-center gap-2">
         <Select
           value={item.status || "none"}
           onValueChange={(v) =>
