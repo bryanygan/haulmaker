@@ -162,7 +162,7 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex min-w-[180px] flex-1 flex-col rounded-lg border border-t-4 transition-colors duration-200 ${COLUMN_BORDER_COLORS[columnKey]} ${isOver ? "bg-muted/50 ring-2 ring-primary/20" : "bg-muted/20"}`}
+      className={`flex min-w-[180px] flex-1 flex-col rounded-lg border border-t-4 transition-all duration-200 ${COLUMN_BORDER_COLORS[columnKey]} ${isOver ? "bg-muted/60 ring-2 ring-primary/30 border-muted-foreground/20" : "bg-muted/20"}`}
     >
       <div className="flex items-center justify-between px-3 py-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -322,7 +322,7 @@ export function StatusBoard({ items, onUpdateItem }: StatusBoardProps) {
             label={label}
             items={grouped[key]}
             onUpdateItem={onUpdateItem}
-            isOver={overColumn === key && activeItem != null && findColumnForItem(activeItem.id) !== key}
+            isOver={overColumn === key && activeItem != null}
             activeId={activeItem?.id || null}
           />
         ))}
