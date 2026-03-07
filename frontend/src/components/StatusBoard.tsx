@@ -258,15 +258,16 @@ export function StatusBoard({ items, onUpdateItem }: StatusBoardProps) {
       }
     }
 
-    setOverColumn(targetColumn);
+    setOverColumn((prev) => prev === targetColumn ? prev : targetColumn);
 
-    // Optimistically move the card to the target column
+    // Optimistically move the card to the target column (only if changed)
     if (targetColumn !== null) {
-      const currentColumn = findColumnForItem(activeId);
-      if (currentColumn !== targetColumn) {
-        const newStatus = targetColumn === "none" ? null : (targetColumn as ItemStatus);
-        setLocalOverrides((prev) => ({ ...prev, [activeId]: newStatus }));
-      }
+      const newStatus = targetColumn === "none" ? null : (targetColumn as ItemStatus);
+      setLocalOverrides((prev) => {
+        const current = activeId in prev ? prev[activeId] : (includedItems.find((i) => i.id === activeId)?.status ?? null);
+        if (current === newStatus) return prev;
+        return { ...prev, [activeId]: newStatus };
+      });
     }
   }
 
