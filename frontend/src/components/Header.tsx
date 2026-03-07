@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { clearToken, isAuthenticated } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { LogOut } from "lucide-react";
+import { LogOut, LayoutDashboard } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname();
@@ -24,9 +24,18 @@ export function Header() {
   return (
     <header className="border-b">
       <div className="container mx-auto flex h-14 items-center justify-between px-4">
-        <a href="/quotes" className="text-lg font-bold">
-          ZR Hauls
-        </a>
+        <div className="flex items-center gap-4">
+          <a href="/quotes" className="text-lg font-bold">
+            ZR Hauls
+          </a>
+          <a
+            href="/boards"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            Boards
+          </a>
+        </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />
           {showLogout && (
