@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Trash2, ExternalLink, Sparkles, Loader2, GripVertical } from "lucide-react";
+import { Trash2, Copy, ExternalLink, Sparkles, Loader2, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -40,6 +40,7 @@ interface ItemsTableProps {
   fixedFeeUsd: number;
   onUpdateItem: (id: string, data: UpdateItemPayload) => Promise<void>;
   onDeleteItem: (id: string) => Promise<void>;
+  onDuplicateItem: (item: Item) => Promise<void>;
   onReorderItems: (items: Item[]) => void;
   viewMode: ItemsViewMode;
 }
@@ -56,6 +57,7 @@ function SortableCardItem({
   fixedFeeUsd,
   onUpdateItem,
   onDeleteItem,
+  onDuplicateItem,
   editing,
   renderEditInput,
   startEdit,
@@ -68,6 +70,7 @@ function SortableCardItem({
   fixedFeeUsd: number;
   onUpdateItem: (id: string, data: UpdateItemPayload) => Promise<void>;
   onDeleteItem: (id: string) => Promise<void>;
+  onDuplicateItem: (item: Item) => Promise<void>;
   editing: EditingCell | null;
   renderEditInput: (item: Item, field: string, type?: string, className?: string, step?: string) => React.ReactNode;
   startEdit: (itemId: string, field: string, currentValue: string) => void;
@@ -118,6 +121,15 @@ function SortableCardItem({
             </span>
           )}
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0"
+          onClick={() => onDuplicateItem(item)}
+          title="Duplicate item"
+        >
+          <Copy className="h-4 w-4 text-muted-foreground" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -237,6 +249,7 @@ function SortableTableRow({
   fixedFeeUsd,
   onUpdateItem,
   onDeleteItem,
+  onDuplicateItem,
   editing,
   renderEditInput,
   startEdit,
@@ -249,6 +262,7 @@ function SortableTableRow({
   fixedFeeUsd: number;
   onUpdateItem: (id: string, data: UpdateItemPayload) => Promise<void>;
   onDeleteItem: (id: string) => Promise<void>;
+  onDuplicateItem: (item: Item) => Promise<void>;
   editing: EditingCell | null;
   renderEditInput: (item: Item, field: string, type?: string, className?: string, step?: string) => React.ReactNode;
   startEdit: (itemId: string, field: string, currentValue: string) => void;
@@ -408,14 +422,25 @@ function SortableTableRow({
         </Select>
       </td>
       <td className="px-3 py-2 text-center">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => onDeleteItem(item.id)}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        <div className="flex items-center justify-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onDuplicateItem(item)}
+            title="Duplicate item"
+          >
+            <Copy className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => onDeleteItem(item.id)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
       </td>
     </tr>
   );
@@ -428,6 +453,7 @@ export function ItemsTable({
   fixedFeeUsd,
   onUpdateItem,
   onDeleteItem,
+  onDuplicateItem,
   onReorderItems,
   viewMode,
 }: ItemsTableProps) {
@@ -636,6 +662,7 @@ export function ItemsTable({
                 fixedFeeUsd={fixedFeeUsd}
                 onUpdateItem={onUpdateItem}
                 onDeleteItem={onDeleteItem}
+                onDuplicateItem={onDuplicateItem}
                 editing={editing}
                 renderEditInput={renderEditInput}
                 startEdit={startEdit}
@@ -671,6 +698,7 @@ export function ItemsTable({
                   fixedFeeUsd={fixedFeeUsd}
                   onUpdateItem={onUpdateItem}
                   onDeleteItem={onDeleteItem}
+                  onDuplicateItem={onDuplicateItem}
                   editing={editing}
                   renderEditInput={renderEditInput}
                   startEdit={startEdit}

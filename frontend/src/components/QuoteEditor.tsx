@@ -131,6 +131,26 @@ export function QuoteEditor({ id }: { id: string }) {
     []
   );
 
+  const handleDuplicateItem = useCallback(
+    async (item: Item) => {
+      if (!quote) return;
+      try {
+        const newItem = await createItem(quote.id, {
+          link: item.link,
+          name: item.name,
+          yuan: item.yuan,
+          type: item.type,
+          weightGrams: item.weightGrams,
+        });
+        setQuote((prev) => (prev ? { ...prev, items: [...prev.items, newItem] } : null));
+        toast.success("Item duplicated");
+      } catch {
+        toast.error("Failed to duplicate item");
+      }
+    },
+    [quote]
+  );
+
   const handleDeleteItem = useCallback(
     async (itemId: string) => {
       try {
@@ -246,6 +266,7 @@ export function QuoteEditor({ id }: { id: string }) {
                 fixedFeeUsd={quote.fixedFeeUsd}
                 onUpdateItem={handleUpdateItem}
                 onDeleteItem={handleDeleteItem}
+                onDuplicateItem={handleDuplicateItem}
                 onReorderItems={handleReorderItems}
                 viewMode={viewMode}
               />
