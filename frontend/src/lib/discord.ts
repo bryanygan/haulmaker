@@ -1,6 +1,15 @@
 import { Quote, QuoteTotals } from "./types";
 
-export function formatDiscordMessage(quote: Quote, totals: QuoteTotals): string {
+export interface DiscordFormatOptions {
+  includeWithInsurance: boolean;
+  includeWithoutInsurance: boolean;
+}
+
+export function formatDiscordMessage(
+  quote: Quote,
+  totals: QuoteTotals,
+  options: DiscordFormatOptions = { includeWithInsurance: true, includeWithoutInsurance: false }
+): string {
   const lines: string[] = [];
 
   // Item lines (only included)
@@ -22,13 +31,25 @@ export function formatDiscordMessage(quote: Quote, totals: QuoteTotals): string 
     `International Shipping - TBD (Estimate: ${totals.totalWeightKg.toFixed(1)}kg * $${quote.shippingPerKgUsd}/kg = $${totals.shipping.toFixed(2)})`
   );
 
-  lines.push("");
-  lines.push(
-    `International Shipping Insurance (${Math.round(quote.insuranceRate * 100)}% of item cost, full refund if lost/seized): TBD (Estimate: $${totals.insurance.toFixed(2)})`
-  );
+  if (options.includeWithInsurance) {
+    lines.push("");
+    lines.push(
+      `International Shipping Insurance (${Math.round(quote.insuranceRate * 100)}% of item cost, full refund if lost/seized): TBD (Estimate: $${totals.insurance.toFixed(2)})`
+    );
+  }
 
-  lines.push("");
-  lines.push(`Estimated Grand Total - $${totals.grandTotal.toFixed(2)}`);
+  // Grand total lines
+  if (options.includeWithInsurance && options.includeWithoutInsurance) {
+    lines.push("");
+    lines.push(`Estimated Grand Total (with insurance) - $${totals.grandTotal.toFixed(2)}`);
+    lines.push(`Estimated Grand Total (without insurance) - $${totals.grandTotalNoInsurance.toFixed(2)}`);
+  } else if (options.includeWithInsurance) {
+    lines.push("");
+    lines.push(`Estimated Grand Total - $${totals.grandTotal.toFixed(2)}`);
+  } else if (options.includeWithoutInsurance) {
+    lines.push("");
+    lines.push(`Estimated Grand Total - $${totals.grandTotalNoInsurance.toFixed(2)}`);
+  }
 
   if (totals.refundedItems.length > 0) {
     lines.push("");
@@ -37,7 +58,15 @@ export function formatDiscordMessage(quote: Quote, totals: QuoteTotals): string 
       lines.push(`${item.name} - -$${item.usd.toFixed(2)}`);
     }
     lines.push(`Total Credit - -$${totals.totalCredit.toFixed(2)}`);
-    lines.push(`Net Total - $${(totals.grandTotal - totals.totalCredit).toFixed(2)}`);
+
+    if (options.includeWithInsurance && options.includeWithoutInsurance) {
+      lines.push(`Net Total (with insurance) - $${(totals.grandTotal - totals.totalCredit).toFixed(2)}`);
+      lines.push(`Net Total (without insurance) - $${(totals.grandTotalNoInsurance - totals.totalCredit).toFixed(2)}`);
+    } else if (options.includeWithInsurance) {
+      lines.push(`Net Total - $${(totals.grandTotal - totals.totalCredit).toFixed(2)}`);
+    } else if (options.includeWithoutInsurance) {
+      lines.push(`Net Total - $${(totals.grandTotalNoInsurance - totals.totalCredit).toFixed(2)}`);
+    }
   }
 
   lines.push("");

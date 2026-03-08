@@ -33,6 +33,7 @@ export function exportToJSON(quote: Quote, totals: QuoteTotals): string {
           shippingEstimate: totals.shipping,
           insuranceEstimate: totals.insurance,
           grandTotal: totals.grandTotal,
+          grandTotalNoInsurance: totals.grandTotalNoInsurance,
         },
       },
     },
@@ -63,7 +64,8 @@ export function exportToCSV(quote: Quote, totals: QuoteTotals): string {
     `Total Weight,${totals.totalWeightKg.toFixed(1)}kg`,
     `Shipping Estimate,$${totals.shipping.toFixed(2)}`,
     `Insurance Estimate,$${totals.insurance.toFixed(2)}`,
-    `Grand Total,$${totals.grandTotal.toFixed(2)}`,
+    `Grand Total (w/ Insurance),$${totals.grandTotal.toFixed(2)}`,
+    `Grand Total (w/o Insurance),$${totals.grandTotalNoInsurance.toFixed(2)}`,
   ];
 
   return [headers.join(","), ...rows, ...summaryRows].join("\n");

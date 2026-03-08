@@ -33,6 +33,7 @@ export function computeTotals(quote: Quote): QuoteTotals {
   const insurance = Math.round(totalItemCost * insuranceRate * 100) / 100;
 
   const grandTotal = Math.round((totalItemCost + haulFeeUsd + shipping + insurance) * 100) / 100;
+  const grandTotalNoInsurance = Math.round((totalItemCost + haulFeeUsd + shipping) * 100) / 100;
 
   const refundedItems = itemCosts
     .filter((i) => i.status === "refunded" && i.included)
@@ -47,6 +48,7 @@ export function computeTotals(quote: Quote): QuoteTotals {
     insurance,
     haulFee: haulFeeUsd,
     grandTotal,
+    grandTotalNoInsurance,
     refundedItems,
     totalCredit,
   };

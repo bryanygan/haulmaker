@@ -82,6 +82,7 @@ export interface QuoteTotals {
   insurance: number;
   haulFee: number;
   grandTotal: number;
+  grandTotalNoInsurance: number;
   refundedItems: { id: string; name: string; usd: number }[];
   totalCredit: number;
 }

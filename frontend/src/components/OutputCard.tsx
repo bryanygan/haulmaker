@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Quote, QuoteTotals } from "@/lib/types";
-import { formatDiscordMessage } from "@/lib/discord";
+import { formatDiscordMessage, DiscordFormatOptions } from "@/lib/discord";
 import { exportToJSON, exportToCSV, downloadFile } from "@/lib/export";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,15 @@ interface OutputCardProps {
 }
 
 export function OutputCard({ quote, totals }: OutputCardProps) {
-  const discordMessage = formatDiscordMessage(quote, totals);
+  const [includeWithInsurance, setIncludeWithInsurance] = useState(true);
+  const [includeWithoutInsurance, setIncludeWithoutInsurance] = useState(false);
+
+  const options: DiscordFormatOptions = {
+    includeWithInsurance,
+    includeWithoutInsurance,
+  };
+
+  const discordMessage = formatDiscordMessage(quote, totals, options);
 
   async function handleCopy() {
     try {
@@ -58,6 +67,26 @@ export function OutputCard({ quote, totals }: OutputCardProps) {
               CSV
             </Button>
           </div>
+        </div>
+        <div className="flex gap-4 mt-2">
+          <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeWithInsurance}
+              onChange={(e) => setIncludeWithInsurance(e.target.checked)}
+              className="h-4 w-4 rounded border-border accent-primary"
+            />
+            With insurance
+          </label>
+          <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeWithoutInsurance}
+              onChange={(e) => setIncludeWithoutInsurance(e.target.checked)}
+              className="h-4 w-4 rounded border-border accent-primary"
+            />
+            Without insurance
+          </label>
         </div>
       </CardHeader>
       <CardContent>

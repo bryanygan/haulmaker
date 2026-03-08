@@ -49,8 +49,12 @@ export function SummaryCard({ totals }: SummaryCardProps) {
           </div>
           <hr />
           <div className="flex justify-between text-base font-bold">
-            <span>Grand Total (Est.)</span>
+            <span>Grand Total w/ Insurance (Est.)</span>
             <span>${totals.grandTotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-base font-bold">
+            <span>Grand Total w/o Insurance (Est.)</span>
+            <span>${totals.grandTotalNoInsurance.toFixed(2)}</span>
           </div>
           {totals.totalCredit > 0 && (
             <>
