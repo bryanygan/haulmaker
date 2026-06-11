@@ -60,6 +60,7 @@ function SortableCardItem({
   onDuplicateItem,
   editing,
   renderEditInput,
+  renderNameEditor,
   startEdit,
   estimatingId,
   bulkEstimating,
@@ -73,6 +74,7 @@ function SortableCardItem({
   onDuplicateItem: (item: Item) => Promise<void>;
   editing: EditingCell | null;
   renderEditInput: (item: Item, field: string, type?: string, className?: string, step?: string) => React.ReactNode;
+  renderNameEditor: (item: Item) => React.ReactNode;
   startEdit: (itemId: string, field: string, currentValue: string) => void;
   estimatingId: string | null;
   bulkEstimating: boolean;
@@ -90,6 +92,7 @@ function SortableCardItem({
   const weight = getItemWeight(item);
   const isDefault = item.weightGrams === null || item.weightGrams === undefined;
   const isEstimating = estimatingId === item.id;
+  const isEditingName = editing?.itemId === item.id && editing.field === "name";
 
   return (
     <div
@@ -98,10 +101,10 @@ function SortableCardItem({
       className={`p-3 space-y-2 ${!item.include ? "opacity-50" : ""} ${item.status === "refunded" ? "bg-red-50/50 dark:bg-red-950/20" : ""} ${isDragging ? "bg-muted shadow-lg rounded-lg" : ""}`}
     >
       {/* Row 1: Drag Handle + Include + Name + Delete */}
-      <div className="flex items-center gap-2">
+      <div className={`flex gap-2 ${isEditingName ? "items-start" : "items-center"}`}>
         <button
           type="button"
-          className="cursor-grab touch-none text-muted-foreground hover:text-foreground shrink-0"
+          className={`cursor-grab touch-none text-muted-foreground hover:text-foreground shrink-0 ${isEditingName ? "mt-2" : ""}`}
           {...attributes}
           {...listeners}
         >
@@ -110,34 +113,39 @@ function SortableCardItem({
         <Switch
           checked={item.include}
           onCheckedChange={(checked) => onUpdateItem(item.id, { include: checked })}
+          className={isEditingName ? "mt-1.5" : ""}
         />
-        <div className="flex-1 min-w-0">
-          {renderEditInput(item, "name") || (
-            <span
-              className="cursor-pointer rounded px-1 hover:bg-muted font-medium truncate block"
-              onClick={() => startEdit(item.id, "name", item.name)}
+        {isEditingName ? (
+          renderNameEditor(item)
+        ) : (
+          <>
+            <div className="flex-1 min-w-0">
+              <span
+                className="cursor-pointer rounded px-1 hover:bg-muted font-medium truncate block"
+                onClick={() => startEdit(item.id, "name", item.name)}
+              >
+                {item.name}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => onDuplicateItem(item)}
+              title="Duplicate item"
             >
-              {item.name}
-            </span>
-          )}
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={() => onDuplicateItem(item)}
-          title="Duplicate item"
-        >
-          <Copy className="h-4 w-4 text-muted-foreground" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={() => onDeleteItem(item.id)}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+              <Copy className="h-4 w-4 text-muted-foreground" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => onDeleteItem(item.id)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Row 2: Type + Status + Link */}
@@ -463,15 +471,25 @@ export function ItemsTable({
   const [bulkEstimating, setBulkEstimating] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
   useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
+    if (!editing) return;
+    // Both layouts stay mounted (the inactive one is display:none), so pick
+    // the editor that is actually visible
+    const el = [inputRef.current, textareaRef.current].find(
+      (c): c is HTMLInputElement | HTMLTextAreaElement => !!c && c.offsetParent !== null
+    );
+    if (!el) return;
+    el.focus();
+    el.select();
+    if (el instanceof HTMLTextAreaElement) {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
     }
   }, [editing]);
 
@@ -623,6 +641,60 @@ export function ItemsTable({
     );
   }
 
+  // Full-width auto-growing name editor for the card layout, where the
+  // standard inline input is too narrow to show long names
+  function renderNameEditor(item: Item) {
+    if (editing?.itemId !== item.id || editing.field !== "name") return null;
+    return (
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <textarea
+          ref={textareaRef}
+          value={editValue}
+          rows={1}
+          enterKeyHint="done"
+          onChange={(e) => {
+            setEditValue(e.target.value.replace(/\n/g, " "));
+            e.target.style.height = "auto";
+            e.target.style.height = `${e.target.scrollHeight}px`;
+          }}
+          onBlur={commitEdit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commitEdit();
+            }
+            if (e.key === "Escape") cancelEdit();
+          }}
+          className="w-full resize-none overflow-hidden rounded-md border border-input bg-transparent px-2 py-1.5 text-sm font-medium shadow-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+        <div className="flex justify-end gap-1">
+          {/* onMouseDown (not onClick) so these fire before the textarea's blur commit */}
+          <Button
+            size="sm"
+            className="h-7 px-3"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              commitEdit();
+            }}
+          >
+            Save
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-3"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              cancelEdit();
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const itemIds = items.map((i) => i.id);
 
   return (
@@ -665,6 +737,7 @@ export function ItemsTable({
                 onDuplicateItem={onDuplicateItem}
                 editing={editing}
                 renderEditInput={renderEditInput}
+                renderNameEditor={renderNameEditor}
                 startEdit={startEdit}
                 estimatingId={estimatingId}
                 bulkEstimating={bulkEstimating}
