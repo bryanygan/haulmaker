@@ -260,6 +260,7 @@ function SortableTableRow({
   onDuplicateItem,
   editing,
   renderEditInput,
+  renderNameEditor,
   startEdit,
   estimatingId,
   bulkEstimating,
@@ -273,6 +274,7 @@ function SortableTableRow({
   onDuplicateItem: (item: Item) => Promise<void>;
   editing: EditingCell | null;
   renderEditInput: (item: Item, field: string, type?: string, className?: string, step?: string) => React.ReactNode;
+  renderNameEditor: (item: Item) => React.ReactNode;
   startEdit: (itemId: string, field: string, currentValue: string) => void;
   estimatingId: string | null;
   bulkEstimating: boolean;
@@ -313,8 +315,8 @@ function SortableTableRow({
           onCheckedChange={(checked) => onUpdateItem(item.id, { include: checked })}
         />
       </td>
-      <td className="px-3 py-2">
-        {renderEditInput(item, "name") || (
+      <td className="min-w-[200px] px-3 py-2">
+        {renderNameEditor(item) || (
           <span
             className="cursor-pointer rounded px-1 hover:bg-muted"
             onClick={() => startEdit(item.id, "name", item.name)}
@@ -479,11 +481,7 @@ export function ItemsTable({
 
   useEffect(() => {
     if (!editing) return;
-    // Both layouts stay mounted (the inactive one is display:none), so pick
-    // the editor that is actually visible
-    const el = [inputRef.current, textareaRef.current].find(
-      (c): c is HTMLInputElement | HTMLTextAreaElement => !!c && c.offsetParent !== null
-    );
+    const el = inputRef.current ?? textareaRef.current;
     if (!el) return;
     el.focus();
     el.select();
@@ -725,7 +723,8 @@ export function ItemsTable({
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           {/* Card layout */}
-          <div className={viewMode === "cards" ? "divide-y" : "hidden"}>
+          {viewMode === "cards" && (
+          <div className="divide-y">
             {items.map((item) => (
               <SortableCardItem
                 key={item.id}
@@ -745,9 +744,11 @@ export function ItemsTable({
               />
             ))}
           </div>
+          )}
 
           {/* Table layout */}
-          <table className={viewMode === "table" ? "w-full text-sm" : "hidden"}>
+          {viewMode === "table" && (
+          <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="w-8 px-1 py-2" />
@@ -774,6 +775,7 @@ export function ItemsTable({
                   onDuplicateItem={onDuplicateItem}
                   editing={editing}
                   renderEditInput={renderEditInput}
+                  renderNameEditor={renderNameEditor}
                   startEdit={startEdit}
                   estimatingId={estimatingId}
                   bulkEstimating={bulkEstimating}
@@ -782,6 +784,7 @@ export function ItemsTable({
               ))}
             </tbody>
           </table>
+          )}
         </SortableContext>
       </DndContext>
 
