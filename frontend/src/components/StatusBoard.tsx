@@ -12,14 +12,17 @@ import {
 import {
   DndContext,
   DragOverlay,
-  closestCenter,
   PointerSensor,
   useSensor,
   useSensors,
   useDroppable,
+  closestCorners,
+  pointerWithin,
+  rectIntersection,
   type DragStartEvent,
   type DragOverEvent,
   type DragEndEvent,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -29,6 +32,24 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState, useCallback } from "react";
+
+// Custom collision detection strategy for robust Kanban board drag-and-drop
+const customCollisionDetection: CollisionDetection = (args) => {
+  // First, check if there are any collisions with pointerWithin
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    return pointerCollisions;
+  }
+  
+  // Check if there are any collisions with rectIntersection
+  const rectCollisions = rectIntersection(args);
+  if (rectCollisions.length > 0) {
+    return rectCollisions;
+  }
+
+  // Fallback to closestCorners
+  return closestCorners(args);
+};
 
 const BOARD_COLUMNS: { key: ItemStatus | "none"; label: string }[] = [
   { key: "none", label: "No Status" },
@@ -308,7 +329,7 @@ export function StatusBoard({ items, onUpdateItem }: StatusBoardProps) {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={customCollisionDetection}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
