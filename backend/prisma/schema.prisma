@@ -23,7 +23,7 @@ model Quote {
   orderId          String?
 
   customerId       String?
-  customer         Customer? @relation(fields: [customerId], references: [id])
+  customer         Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   exchangeRate     Float    @default(6.5)
   fixedFeeUsd      Float    @default(2)

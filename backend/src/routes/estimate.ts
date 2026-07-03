@@ -77,7 +77,8 @@ Respond with ONLY a JSON object in this exact format, no other text:
     const actualWeight = parsed.actualWeightGrams;
     const volumetricWeight = parsed.volumetricWeightGrams;
 
-    if (!actualWeight || typeof actualWeight !== "number") {
+    // Note: 0 is a valid weight — don't use a falsy check here
+    if (typeof actualWeight !== "number" || isNaN(actualWeight) || actualWeight < 0) {
       res.status(500).json({ error: "Invalid weight estimate" });
       return;
     }

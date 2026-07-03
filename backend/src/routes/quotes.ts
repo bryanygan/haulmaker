@@ -3,6 +3,28 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
+// Validates numeric quote fields; returns an error message or null if valid
+function validateQuoteNumbers(body: Record<string, unknown>): string | null {
+  const nonNegative = ["exchangeRate", "fixedFeeUsd", "shippingPerKgUsd", "haulFeeUsd"];
+  for (const field of nonNegative) {
+    const value = body[field];
+    if (value !== undefined && (!Number.isFinite(Number(value)) || Number(value) < 0)) {
+      return `${field} must be a non-negative number`;
+    }
+  }
+  if (body.exchangeRate !== undefined && Number(body.exchangeRate) <= 0) {
+    return "exchangeRate must be greater than 0";
+  }
+  const insuranceRate = body.insuranceRate;
+  if (
+    insuranceRate !== undefined &&
+    (!Number.isFinite(Number(insuranceRate)) || Number(insuranceRate) < 0 || Number(insuranceRate) > 1)
+  ) {
+    return "insuranceRate must be a number between 0 and 1";
+  }
+  return null;
+}
+
 // GET /api/quotes
 router.get("/", async (_req: Request, res: Response) => {
   try {
@@ -36,6 +58,12 @@ router.post("/", async (req: Request, res: Response) => {
 
     if (!customerName) {
       res.status(400).json({ error: "customerName is required" });
+      return;
+    }
+
+    const validationError = validateQuoteNumbers(req.body);
+    if (validationError) {
+      res.status(400).json({ error: validationError });
       return;
     }
 
@@ -98,6 +126,12 @@ router.put("/:id", async (req: Request<{ id: string }>, res: Response) => {
       status,
       notes,
     } = req.body;
+
+    const validationError = validateQuoteNumbers(req.body);
+    if (validationError) {
+      res.status(400).json({ error: validationError });
+      return;
+    }
 
     const quote = await prisma.quote.update({
       where: { id: req.params.id },

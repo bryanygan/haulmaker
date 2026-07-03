@@ -55,7 +55,14 @@ router.put("/:id", async (req: Request<{ id: string }>, res: Response) => {
 // DELETE /api/customers/:id
 router.delete("/:id", async (req: Request<{ id: string }>, res: Response) => {
   try {
-    await prisma.customer.delete({ where: { id: req.params.id } });
+    // Detach quotes first so the FK constraint doesn't reject the delete
+    await prisma.$transaction([
+      prisma.quote.updateMany({
+        where: { customerId: req.params.id },
+        data: { customerId: null },
+      }),
+      prisma.customer.delete({ where: { id: req.params.id } }),
+    ]);
     res.status(204).send();
   } catch (error) {
     console.error("DELETE /customers/:id error:", error);

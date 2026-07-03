@@ -22,6 +22,9 @@ export function SettingsCard({ quote, onUpdate }: SettingsCardProps) {
   const [orderId, setOrderId] = useState(quote.orderId || "");
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<UpdateQuotePayload | null>(null);
+  const onUpdateRef = useRef(onUpdate);
+  onUpdateRef.current = onUpdate;
 
   // Sync when quote changes from server
   useEffect(() => {
@@ -35,19 +38,36 @@ export function SettingsCard({ quote, onUpdate }: SettingsCardProps) {
     setOrderId(quote.orderId || "");
   }, [quote]);
 
+  // Commit any pending debounced update immediately (on blur/unmount)
+  const flush = useCallback(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    if (pendingRef.current) {
+      const data = pendingRef.current;
+      pendingRef.current = null;
+      onUpdateRef.current(data);
+    }
+  }, []);
+
   const debouncedUpdate = useCallback(
     (data: UpdateQuotePayload) => {
+      // Merge so quick edits to different fields don't drop earlier changes
+      pendingRef.current = { ...pendingRef.current, ...data };
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => onUpdate(data), 500);
+      debounceRef.current = setTimeout(() => {
+        debounceRef.current = null;
+        const pending = pendingRef.current;
+        pendingRef.current = null;
+        if (pending) onUpdateRef.current(pending);
+      }, 500);
     },
-    [onUpdate]
+    []
   );
 
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
+  // Flush on unmount so navigating away doesn't silently drop edits
+  useEffect(() => flush, [flush]);
 
   function handleChange(field: string, value: string) {
     switch (field) {
@@ -92,7 +112,7 @@ export function SettingsCard({ quote, onUpdate }: SettingsCardProps) {
       <CardHeader className="pb-3">
         <CardTitle className="text-base">Settings</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3" onBlur={flush}>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2 space-y-1">
             <Label className="text-xs">Customer Name</Label>

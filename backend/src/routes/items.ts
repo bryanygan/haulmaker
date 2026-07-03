@@ -21,6 +21,19 @@ router.post("/quotes/:id/items", async (req: Request<{ id: string }>, res: Respo
       return;
     }
 
+    if (!Number.isFinite(Number(yuan)) || Number(yuan) < 0) {
+      res.status(400).json({ error: "yuan must be a non-negative number" });
+      return;
+    }
+    if (
+      weightGrams !== undefined &&
+      weightGrams !== null &&
+      (!Number.isFinite(Number(weightGrams)) || Number(weightGrams) < 0)
+    ) {
+      res.status(400).json({ error: "weightGrams must be a non-negative number" });
+      return;
+    }
+
     const itemCount = await prisma.item.count({ where: { quoteId } });
 
     const item = await prisma.item.create({
@@ -30,7 +43,7 @@ router.post("/quotes/:id/items", async (req: Request<{ id: string }>, res: Respo
         name,
         yuan: Number(yuan),
         type,
-        weightGrams: weightGrams !== undefined ? Number(weightGrams) : null,
+        weightGrams: weightGrams !== undefined && weightGrams !== null ? Number(weightGrams) : null,
         include: include !== undefined ? include : true,
         status: status || null,
         position: itemCount,
@@ -48,6 +61,19 @@ router.post("/quotes/:id/items", async (req: Request<{ id: string }>, res: Respo
 router.put("/items/:id", async (req: Request<{ id: string }>, res: Response) => {
   try {
     const { link, name, yuan, type, weightGrams, include, status } = req.body;
+
+    if (yuan !== undefined && (!Number.isFinite(Number(yuan)) || Number(yuan) < 0)) {
+      res.status(400).json({ error: "yuan must be a non-negative number" });
+      return;
+    }
+    if (
+      weightGrams !== undefined &&
+      weightGrams !== null &&
+      (!Number.isFinite(Number(weightGrams)) || Number(weightGrams) < 0)
+    ) {
+      res.status(400).json({ error: "weightGrams must be a non-negative number" });
+      return;
+    }
 
     const item = await prisma.item.update({
       where: { id: req.params.id },
@@ -81,10 +107,11 @@ router.put("/quotes/:id/reorder", async (req: Request<{ id: string }>, res: Resp
       return;
     }
 
+    // Scope updates to this quote so item IDs from other quotes can't be reordered
     await prisma.$transaction(
       itemIds.map((id, index) =>
-        prisma.item.update({
-          where: { id },
+        prisma.item.updateMany({
+          where: { id, quoteId },
           data: { position: index },
         })
       )
